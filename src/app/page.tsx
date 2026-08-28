@@ -1,69 +1,292 @@
-import Image from "next/image";
+'use client'
+import { useState } from 'react'
+import { useSession, signIn, signOut } from 'next-auth/react'
 
-export default function Home() {
+const Page = () => {
+  const { data: session, status } = useSession()
+  const [credEmail, setCredEmail] = useState('')
+  const [credPassword, setCredPassword] = useState('')
+  const [credError, setCredError] = useState('')
+  const [magicEmail, setMagicEmail] = useState('')
+
+  const [signupName, setSignupName] = useState('')
+  const [signupEmail, setSignupEmail] = useState('')
+  const [signupPassword, setSignupPassword] = useState('')
+  const [signupMessage, setSignupMessage] = useState('')
+
+  // Forgot password
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotMessage, setForgotMessage] = useState('')
+
+  // Resend verification (shown when credError is email_not_verified)
+  const [unverifiedEmail, setUnverifiedEmail] = useState('')
+  const [resendMessage, setResendMessage] = useState('')
+
+  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCredError('')
+    setUnverifiedEmail('')
+    setResendMessage('')
+
+    const result = await signIn('credentials', {
+      email: credEmail,
+      password: credPassword,
+      redirect: false,
+    })
+
+    if (result?.error) {
+      if (result.code === 'email_not_verified') {
+        setCredError('Please verify your email before signing in — check your inbox.')
+        setUnverifiedEmail(credEmail)
+      } else {
+        setCredError('Invalid email or password.')
+      }
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResendMessage('')
+
+    const res = await fetch('/api/verify-email/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: unverifiedEmail }),
+    })
+
+    if (res.ok) {
+      setResendMessage('Verification email sent — check your inbox.')
+    } else {
+      setResendMessage('Something went wrong. Please try again.')
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotMessage('')
+
+    const res = await fetch('/api/reset-password/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail }),
+    })
+
+    if (res.ok) {
+      setForgotMessage('If that email is registered, a reset link has been sent.')
+      setForgotEmail('')
+    } else {
+      setForgotMessage('Something went wrong. Please try again.')
+    }
+  }
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSignupMessage('')
+
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: signupName,
+        email: signupEmail,
+        password: signupPassword,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setSignupMessage(data.error ?? 'Something went wrong')
+      return
+    }
+
+    setSignupMessage('Account created — check your email to verify before signing in.')
+    setSignupName('')
+    setSignupEmail('')
+    setSignupPassword('')
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center bg-slate-500 font-sans">
+        <p className="text-white">Loading...</p>
+      </div>
+    )
+  }
+
+  if (status === 'authenticated') {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center bg-slate-500 font-sans">
+        <p className="text-white mb-2 text-xl">
+          Signed in as: {session.user?.email}
+        </p>
+        <p className="text-white mb-2 text-xl">
+          Provider: {session.provider ?? 'unknown'}
+        </p>
+        <button
+          className="p-2 m-2 bg-white border-2 border-red-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
+          onClick={() => signOut()}
+        >
+          Sign out
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col flex-1 items-center justify-center bg-slate-500 font-sans">
+      <p className="text-white mb-2 text-xl">Not signed in</p>
+
+      <button
+        className="p-2 m-2 bg-white border-2 border-orange-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
+        onClick={() => signIn('google')}
+      >
+        Sign in with Google
+      </button>
+      <button
+        className="p-2 m-2 bg-white border-2 border-orange-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
+        onClick={() => signIn('github')}
+      >
+        Sign in with GitHub
+      </button>
+
+      <form
+        className="flex flex-col items-center m-2"
+        onSubmit={handleCredentialsSignIn}
+      >
+        <input
+          type="email"
+          placeholder="Email"
+          value={credEmail}
+          onChange={(e) => setCredEmail(e.target.value)}
+          className="p-2 m-1 rounded-lg border-2 border-orange-500 bg-white text-black"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+        <input
+          type="password"
+          placeholder="Password"
+          value={credPassword}
+          onChange={(e) => setCredPassword(e.target.value)}
+          className="p-2 m-1 rounded-lg border-2 border-orange-500 bg-white text-black"
+        />
+        <button
+          type="submit"
+          className="p-2 m-1 bg-white border-2 border-orange-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
+        >
+          Sign in with Credentials
+        </button>
+
+        {credError && (
+          <p className="text-red-200 mt-1 text-sm">{credError}</p>
+        )}
+
+        {unverifiedEmail && (
+          <div className="flex flex-col items-center mt-1">
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              className="text-white text-sm underline hover:cursor-pointer"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+              Resend verification email
+            </button>
+            {resendMessage && (
+              <p className="text-white mt-1 text-sm">{resendMessage}</p>
+            )}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setShowForgotPassword((v) => !v)}
+          className="text-white text-sm underline mt-2 hover:cursor-pointer"
+        >
+          Forgot password?
+        </button>
+      </form>
+
+      {showForgotPassword && (
+        <form
+          className="flex flex-col items-center m-2"
+          onSubmit={handleForgotPassword}
+        >
+          <input
+            type="email"
+            placeholder="Email"
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            className="p-2 m-1 rounded-lg border-2 border-orange-500 bg-white text-black"
+          />
+          <button
+            type="submit"
+            className="p-2 m-1 bg-white border-2 border-orange-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            Send Reset Link
+          </button>
+          {forgotMessage && (
+            <p className="text-white mt-1 text-sm">{forgotMessage}</p>
+          )}
+        </form>
+      )}
+
+      <form
+        className="flex flex-col items-center m-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          signIn('resend', { email: magicEmail, redirectTo: '/' })
+        }}
+      >
+        <input
+          type="email"
+          placeholder="Email"
+          value={magicEmail}
+          onChange={(e) => setMagicEmail(e.target.value)}
+          className="p-2 m-1 rounded-lg border-2 border-orange-500 bg-white text-black"
+        />
+        <button
+          type="submit"
+          className="p-2 m-1 bg-white border-2 border-orange-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
+        >
+          Send Magic Link
+        </button>
+      </form>
+
+      <form
+        className="flex flex-col items-center m-2 pt-4 border-t-2 border-white/30"
+        onSubmit={handleSignup}
+      >
+        <p className="text-white mb-2 text-xl">Sign up (email & password)</p>
+        <input
+          type="text"
+          placeholder="Name (optional)"
+          value={signupName}
+          onChange={(e) => setSignupName(e.target.value)}
+          className="p-2 m-1 rounded-lg border-2 border-orange-500 bg-white text-black"
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={signupEmail}
+          onChange={(e) => setSignupEmail(e.target.value)}
+          className="p-2 m-1 rounded-lg border-2 border-orange-500 bg-white text-black"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={signupPassword}
+          onChange={(e) => setSignupPassword(e.target.value)}
+          className="p-2 m-1 rounded-lg border-2 border-orange-500 bg-white text-black"
+        />
+        <button
+          type="submit"
+          className="p-2 m-1 bg-white border-2 border-orange-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
+        >
+          Sign Up
+        </button>
+        {signupMessage && (
+          <p className="text-white mt-2 text-sm">{signupMessage}</p>
+        )}
+      </form>
     </div>
-  );
+  )
 }
+
+export default Page

@@ -1,6 +1,5 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
@@ -10,4 +9,91 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+/**
+ * One user may use multiple login methods, all of them corresponding to the same profile.
+ * These options are Email only (magic link), email & password (reset available via email), Google (OAuth), and GitHub (OAuth)
+ * There are two systems recording account provider information for users:
+ * - Auth.js tag: 'provider' - used at code-level by Auth.js to route sign-in attempts to the right provider
+ * - Database - records 'type', 'provider', and related OAuth token data to 'accounts' table, linked via userId foreign key
+ * User login methods:
+ * OAuth - written to account table -> 'type': "oauth":
+ * - Google -> Auth.js 'provider': "google", 'account' row 'provider': "google"
+ * - Github -> Auth.js 'provider': "github", 'account' row 'provider': "github"
+ * Non-OAuth - not written to account table:
+ * - Credentials (email & password) - Manually uses 'Resend' SDK to perform email verifications & password resets
+ * - Auth.js provider: "credentials"
+ * - Resend (email only) - Uses Auth.js 'Resend' provider magic link tool to login using only email
+ * - Auth.js provider: "resend"
+ */
+
+// 'User' model stores a given user's profile information including their name, email, whether that email is verified, profile photo,
+// hashed password (if applicable), and linked OAuth accounts & sessions (if applicable). 
+// Both providers reliably return the user's name, profile photo, and email address.
+// Google reliably returns whether the user's email is verified, but GitHub does not. This value will be used as-is from Google upon sign-in.
+// As a workaround, GitHub users will have their emailVerified field set to true automatically upon sign-in.
+// resetToken and resetTokenExpiry are used for password resets for 'credentials' users.
+// emailVerificationToken and emailVerificationExpiry are used for email verification for 'credentials' users.
+// The 'accounts' field is an array of Account objects, which store the user's linked OAuth accounts and their associated OAuth tokens. 
+// The 'sessions' field is an array of Session objects, which store the user's active sessions (if using the "database" session strategy).
+model User {
+  id                      String    @id @default(cuid())
+  name                    String?
+  // User's email address, inherited from OAuth provider or entered manually for 'credentials' users. Must be unique across all users.
+  email                   String?   @unique
+  // Whether the user's email address has been verified. For OAuth users, this value is inherited from the provider (Google or GitHub). 
+  // For 'credentials' users, this value is set to true upon successful email verification via the Resend SDK.
+  // For 'resend' users, this value is set to true upon successful magic link login via the Resend SDK.
+  emailVerified           DateTime?
+  image                   String? // Optional profile photo URL
+  password                String? // Hashed password only for 'credentials' users
+  resetToken              String? // One-time token for password reset, only for 'credentials' users
+  resetTokenExpiry        DateTime? // Expiration time for the password reset token, only for 'credentials' users
+  emailVerificationToken  String? // One-time token for email verification, only for 'credentials' users
+  emailVerificationExpiry DateTime? // Expiration time for the email verification token, only for 'credentials' users
+  accounts                Account[] // Stores all of a user's OAuth logins (Google, GitHub)
+  sessions                Session[] // Stores all of a user's active sessions (if using the "database" session strategy in the future)
+}
+
+// Stores a user's linked OAuth accounts (Google, GitHub) and their associated OAuth tokens. 
+// This table is not used for "credentials" or "resend" users, as they do not use OAuth.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String // Foreign key to the User model
+  type              String // "oauth" (only value used, since Google & GitHub are the only OAuth providers configured)
+  provider          String // "google" or "github" — extend this comment if more OAuth providers are added later
+  providerAccountId String // external provider's unique account ID for the user
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// Used only under Auth.js's "database" session strategy (storing active sessions 
+// with tokens and expiration). Since this app uses "jwt" strategy (required for 
+// the Credentials provider), this table is not populated — sessions live in a 
+// signed cookie instead. Kept in the schema because @auth/prisma-adapter requires 
+// the model to exist, even if unused.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Stores one-time tokens for Auth.js's built-in Resend (magic link) provider.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
