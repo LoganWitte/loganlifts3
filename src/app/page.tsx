@@ -108,19 +108,19 @@ const Page = () => {
 
   if (status === 'loading') {
     return (
-      <div className="flex flex-col flex-1 items-center justify-center bg-slate-500 font-sans">
-        <p className="text-white">Loading...</p>
+      <div className="flex flex-col flex-1 items-center justify-center">
+        <p className="">Loading...</p>
       </div>
     )
   }
 
   if (status === 'authenticated') {
     return (
-      <div className="flex flex-col flex-1 items-center justify-center bg-slate-500 font-sans">
-        <p className="text-white mb-2 text-xl">
+      <div className="flex flex-col flex-1 items-center justify-center">
+        <p className="mb-2 text-xl">
           Signed in as: {session.user?.email}
         </p>
-        <p className="text-white mb-2 text-xl">
+        <p className="mb-2 text-xl">
           Provider: {session.provider ?? 'unknown'}
         </p>
         <button
@@ -134,8 +134,8 @@ const Page = () => {
   }
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-slate-500 font-sans">
-      <p className="text-white mb-2 text-xl">Not signed in</p>
+    <div className="flex flex-col flex-1 items-center justify-center">
+      <p className="mb-2 text-xl">Not signed in</p>
 
       <button
         className="p-2 m-2 bg-white border-2 border-orange-500 text-black rounded-lg hover:cursor-pointer hover:bg-gray-200"
@@ -184,12 +184,12 @@ const Page = () => {
             <button
               type="button"
               onClick={handleResendVerification}
-              className="text-white text-sm underline hover:cursor-pointer"
+              className="text-sm underline hover:cursor-pointer"
             >
               Resend verification email
             </button>
             {resendMessage && (
-              <p className="text-white mt-1 text-sm">{resendMessage}</p>
+              <p className="mt-1 text-sm">{resendMessage}</p>
             )}
           </div>
         )}
@@ -197,7 +197,7 @@ const Page = () => {
         <button
           type="button"
           onClick={() => setShowForgotPassword((v) => !v)}
-          className="text-white text-sm underline mt-2 hover:cursor-pointer"
+          className="text-sm underline mt-2 hover:cursor-pointer"
         >
           Forgot password?
         </button>
@@ -222,7 +222,7 @@ const Page = () => {
             Send Reset Link
           </button>
           {forgotMessage && (
-            <p className="text-white mt-1 text-sm">{forgotMessage}</p>
+            <p className="mt-1 text-sm">{forgotMessage}</p>
           )}
         </form>
       )}
@@ -253,7 +253,7 @@ const Page = () => {
         className="flex flex-col items-center m-2 pt-4 border-t-2 border-white/30"
         onSubmit={handleSignup}
       >
-        <p className="text-white mb-2 text-xl">Sign up (email & password)</p>
+        <p className="mb-2 text-xl">Sign up (email & password)</p>
         <input
           type="text"
           placeholder="Name (optional)"
@@ -282,7 +282,7 @@ const Page = () => {
           Sign Up
         </button>
         {signupMessage && (
-          <p className="text-white mt-2 text-sm">{signupMessage}</p>
+          <p className="mt-2 text-sm">{signupMessage}</p>
         )}
       </form>
     </div>
