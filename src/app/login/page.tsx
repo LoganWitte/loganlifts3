@@ -60,14 +60,14 @@ const Page = () => {
                 Sign in to LoganLifts
             </div>
 
-            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-green-600/70 hover:bg-green-600 text-black
+            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(64.75%_0.1603_148.5)] hover:bg-[oklch(58.75%_0.1603_148.5)] text-black
                                hover:cursor-pointer"
                                onClick={() => signIn('google')}>
                 <FaGoogle className="scale-160 ml-2 mr-4"/>
                 Continue with Google
             </button>
 
-            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-purple-600/70 hover:bg-purple-600/90 text-black
+            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(0.5502_0.2585_295.66)] hover:bg-[oklch(0.5202_0.2585_295.66)] text-black
                                hover:cursor-pointer"
                                onClick={() => signIn('github')}>
                 <FaGithub className="scale-160 ml-2 mr-4"/>
@@ -118,7 +118,7 @@ const Page = () => {
                 <button 
                     type="submit" 
                     className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-2 rounded-md border-2 
-                    border-black bg-orange-500/90 hover:bg-orange-500 text-black hover:cursor-pointer"
+                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
                 >
                     <FaKey className="scale-160 ml-2 mr-4"/>
                     Sign in with credentials
@@ -155,7 +155,7 @@ const Page = () => {
                 <button 
                     type="submit" 
                     className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 
-                    border-black bg-orange-500/90 hover:bg-orange-500 text-black hover:cursor-pointer"
+                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
                 >
                     <FaEnvelope className="scale-160 ml-2 mr-4"/>
                     Sign in with email link
