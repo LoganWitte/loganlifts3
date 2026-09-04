@@ -65,15 +65,17 @@ export async function POST(req: Request) {
         data: {
             emailVerificationToken: token,
             emailVerificationExpiry: new Date(Date.now() + 1000 * 60 * 60 * 24), // 24h
+            lastVerificationEmailSentAt: new Date(),
         },
     })
 
-    // Send the verification email
+    // Sends verification email
+    const verifyUrl = `${process.env.APP_URL}/verify-email?token=${token}`
     await resend.emails.send({
         from: process.env.EMAIL_FROM!,
         to: email,
-        subject: 'Verify your email',
-        html: `<p>Click <a href="${process.env.APP_URL}/verify-email?token=${token}">here</a> to verify your email.</p>`,
+        subject: 'LoganLifts - Verify your email',
+        html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email. This link expires in 24 hours.</p>`,
     })
 
     return NextResponse.json({ id: user.id, email: user.email })

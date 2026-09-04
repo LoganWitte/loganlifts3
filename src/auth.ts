@@ -6,19 +6,29 @@ import Resend from 'next-auth/providers/resend'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { sendVerificationRequestCustom } from './lib/sendMagicLink'
 
 class EmailNotVerifiedError extends CredentialsSignin {
     code = 'email_not_verified'
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+    theme: {
+        colorScheme: "light",
+        brandColor: "#F97316",
+        buttonText: "#000000",
+        logo: `${process.env.PRODUCTION_URL}/logo.png`,
+    },
     adapter: PrismaAdapter(prisma),
     session: { strategy: 'jwt' },
     trustHost: true,
     providers: [
         Google({ allowDangerousEmailAccountLinking: true }),
         GitHub({ allowDangerousEmailAccountLinking: true }),
-        Resend({ from: process.env.EMAIL_FROM }),
+        Resend({
+            from: process.env.EMAIL_FROM,
+            sendVerificationRequest: sendVerificationRequestCustom,
+        }),
         Credentials({
             credentials: {
                 email: { label: 'Email', type: 'email' },
@@ -48,9 +58,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             },
         }),
     ],
-    pages: {
-        verifyRequest: '/check-email',
-    },
     callbacks: {
         async signIn({ user, account }) {
             if ((account?.provider === 'google' || account?.provider === 'github') && user.email) {

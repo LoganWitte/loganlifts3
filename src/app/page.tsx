@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
+import { loginWithMagicLink } from '@/lib/loginWithMagicLink'
 
 const Page = () => {
   const { data: session, status } = useSession()
@@ -8,6 +9,7 @@ const Page = () => {
   const [credPassword, setCredPassword] = useState('')
   const [credError, setCredError] = useState('')
   const [magicEmail, setMagicEmail] = useState('')
+  const [magicMessage, setMagicMessage] = useState('')
 
   const [signupName, setSignupName] = useState('')
   const [signupEmail, setSignupEmail] = useState('')
@@ -104,6 +106,18 @@ const Page = () => {
     setSignupName('')
     setSignupEmail('')
     setSignupPassword('')
+  }
+
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setMagicMessage('')
+
+    const result = await loginWithMagicLink(magicEmail)
+    setMagicMessage(
+      result.success
+        ? 'Check your email for the sign-in link.'
+        : result.error,
+    )
   }
 
   if (status === 'loading') {
@@ -229,10 +243,7 @@ const Page = () => {
 
       <form
         className="flex flex-col items-center m-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          signIn('resend', { email: magicEmail, redirectTo: '/' })
-        }}
+        onSubmit={handleMagicLink}
       >
         <input
           type="email"
@@ -247,6 +258,9 @@ const Page = () => {
         >
           Send Magic Link
         </button>
+        {magicMessage && (
+          <p className="mt-1 text-sm">{magicMessage}</p>
+        )}
       </form>
 
       <form

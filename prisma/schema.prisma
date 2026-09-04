@@ -38,22 +38,23 @@ datasource db {
 // The 'accounts' field is an array of Account objects, which store the user's linked OAuth accounts and their associated OAuth tokens. 
 // The 'sessions' field is an array of Session objects, which store the user's active sessions (if using the "database" session strategy).
 model User {
-  id                      String    @id @default(cuid())
-  name                    String?
+  id                          String    @id @default(cuid())
+  name                        String?
   // User's email address, inherited from OAuth provider or entered manually for 'credentials' users. Must be unique across all users.
-  email                   String?   @unique
+  email                       String?   @unique
   // Whether the user's email address has been verified. For OAuth users, this value is inherited from the provider (Google or GitHub). 
   // For 'credentials' users, this value is set to true upon successful email verification via the Resend SDK.
   // For 'resend' users, this value is set to true upon successful magic link login via the Resend SDK.
-  emailVerified           DateTime?
-  image                   String? // Optional profile photo URL
-  password                String? // Hashed password only for 'credentials' users
-  resetToken              String? // One-time token for password reset, only for 'credentials' users
-  resetTokenExpiry        DateTime? // Expiration time for the password reset token, only for 'credentials' users
-  emailVerificationToken  String? // One-time token for email verification, only for 'credentials' users
-  emailVerificationExpiry DateTime? // Expiration time for the email verification token, only for 'credentials' users
-  accounts                Account[] // Stores all of a user's OAuth logins (Google, GitHub)
-  sessions                Session[] // Stores all of a user's active sessions (if using the "database" session strategy in the future)
+  emailVerified               DateTime?
+  image                       String? // Optional profile photo URL
+  password                    String? // Hashed password only for 'credentials' users
+  resetToken                  String? // One-time token for password reset, only for 'credentials' users
+  resetTokenExpiry            DateTime? // Expiration time for the password reset token, only for 'credentials' users
+  emailVerificationToken      String? // One-time token for email verification, only for 'credentials' users
+  emailVerificationExpiry     DateTime? // Expiration time for the email verification token, only for 'credentials' users
+  lastVerificationEmailSentAt DateTime? // Timestamp of the last verification email sent, tracking both verify-email and reset-password
+  accounts                    Account[] // Stores all of a user's OAuth logins (Google, GitHub)
+  sessions                    Session[] // Stores all of a user's active sessions (if using the "database" session strategy in the future)
 }
 
 // Stores a user's linked OAuth accounts (Google, GitHub) and their associated OAuth tokens. 
@@ -96,4 +97,10 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Tracks the last Auth.js magic-link request for each normalized email address.
+model MagicLinkRateLimit {
+  identifier String   @id
+  lastSentAt DateTime
 }
