@@ -17,7 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         colorScheme: "light",
         brandColor: "#F97316",
         buttonText: "#000000",
-        logo: `${process.env.PRODUCTION_URL}/logo.png`,
+        logo: `${process.env.PRODUCTION_URL}/logo.jpg`,
     },
     adapter: PrismaAdapter(prisma),
     session: { strategy: 'jwt' },
