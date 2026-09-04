@@ -125,7 +125,7 @@ const Page = () => {
                     border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
                 >
                     <FaUser className="scale-160 ml-2 mr-4"/>
-                    Register account
+                    Create account
                 </button>
             </form>
         </div>
