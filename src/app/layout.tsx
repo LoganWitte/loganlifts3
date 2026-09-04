@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="h-full flex flex-col">
         <Providers session={session}>
           <Navbar/>
-          <main className="flex-1 flex flex-col overflow-y-auto bg-stone-400 text-black">
+          <main className="flex-1 flex flex-col items-center overflow-y-auto bg-stone-400 text-black">
             {children}
           </main>
         </Providers>
