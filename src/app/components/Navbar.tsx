@@ -8,7 +8,7 @@ const Navbar = () => {
     const { status } = useSession();
 
     return(
-        <nav className="w-full flex items-center justify-between p-4 bg-orange-500 border-b border-black">
+        <nav className="w-full flex items-center justify-between p-4 bg-orange-500 border-b border-black overflow-x-auto">
             <Link className="text-4xl text-black select-none" href="/">LoganLifts™</Link>
             <div className="flex-1 flex items-center justify-end gap-4 text-white text-center">
                 <Link className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] select-none" href="/calculator">1RM Calculator</Link>
