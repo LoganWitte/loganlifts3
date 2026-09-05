@@ -4,24 +4,99 @@ import { useSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useCallback, useEffect} from 'react';
 import { FaGithub, FaGoogle, FaEye, FaEyeSlash, FaUser } from 'react-icons/fa'
+import { checkUsername, checkEmail, checkPassword } from '@/lib/credentialChecks'
 
 const Page = () => {
 
-    const { data: session } = useSession();
+    const { status } = useSession();
     const router = useRouter();
-
+    
     // Redirect to home page if user is already signed in
     useEffect(() => {
-        if(session) {
+        if(status === "authenticated") {
             router.push('/');
         }
-    }, [router, session]);
+    }, [router, status]);
 
-    // State variables
+    // Form inputs
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordVisible, setPasswordVisible] = useState(false);
+
+    // Form outputs
+    const [usernameErrors, setUsernameErrors] = useState<string[]>([]);
+    const [emailErrors, setEmailErrors] = useState<string[]>([]);
+    const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+    const [registerOutput, setRegisterOutput] = useState<string[]>([]);
+    const [registerOutputColor, setRegisterOutputColor] = useState<"black" | "red" | "green">("black");
+    const [usernameHighlighted, setUsernameHighlighted] = useState(false);
+    const [emailHighlighted, setEmailHighlighted] = useState(false);
+    const [passwordHighlighted, setPasswordHighlighted] = useState(false);
+
+    // Form submit handlers
+    async function handleRegisterSubmit() {
+        
+        // Clears output fields
+        setRegisterOutput([]);
+        setRegisterOutputColor("black");
+        setUsernameHighlighted(false);
+        setUsernameErrors([]);
+        setEmailHighlighted(false);
+        setEmailErrors([]);
+        setPasswordHighlighted(false);
+        setEmailErrors([]);
+
+        // Checks validity of input fields
+        const usernameCheck = checkUsername(username);
+        const emailCheck = checkEmail(email);
+        const passwordCheck = checkPassword(password);
+
+        // Highlights invalid input fields & displays their errors
+        if(!usernameCheck.status) {
+            setUsernameErrors(usernameCheck.errors);
+            setUsernameHighlighted(true);
+        }
+        if(!emailCheck.status) {
+            setEmailErrors(emailCheck.errors);
+            setEmailHighlighted(true);
+        }
+        if(!passwordCheck.status) {
+            setPasswordErrors(passwordCheck.errors);
+            setPasswordHighlighted(true);
+        }
+
+        // Returns before hitting API if any inputs are invalid
+        if(!usernameCheck.status || !emailCheck.status || !passwordCheck.status) {
+            return;
+        }
+        
+        // Signs up using '/api/register' endpoint
+        const result = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: username,
+                email: email,
+                password: password,
+            }),
+        })
+
+        // Displays error / success from above endpoint
+        const data = await result.json();
+        if (!result.ok) {
+            setRegisterOutput(data.error ?? "Something went wrong. Try again later.");
+            setRegisterOutputColor("red");
+            return;
+        }
+        else {
+            setRegisterOutput(["Account created — check your email to verify before signing in."]);
+            setRegisterOutputColor("green");
+            setUsername("");
+            setEmail("");
+            setPassword("");
+        }
+    }
 
     // Updates state variables when user navigates back to this page and the input fields are pre-filled 
     // with their previous values (e.g. after a failed login attempt)
@@ -41,15 +116,11 @@ const Page = () => {
         if(node !== null && node.value !== password) {
             setPassword(node.value);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
     }, []);
 
-    function handleRegisterSubmit() {
-        return;
-    }
-
     return(
-        <div className="flex flex-col p-4 m-4 bg-slate-200 border border-black text-black">
+        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border border-black text-black min-w-full sm:min-w-160 w-full sm:w-fit">
             
             <div className="flex flex-row justify-center text-2xl font-semibold mb-2">
                 Sign up for LoganLifts
@@ -85,29 +156,78 @@ const Page = () => {
                 <input 
                     ref={usernameInputRef}
                     type="text" 
-                    className="flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 border-black"
-                    placeholder="Username (optional)"
+                    className={`
+                        flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 
+                        ${usernameHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
+                    `}
+                    placeholder="Username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={
+                        (e) => {
+                            setUsername(e.target.value);
+                            setUsernameHighlighted(false);
+                            setUsernameErrors([]);
+                            setRegisterOutput([]);
+                            setRegisterOutputColor("black");
+                        }
+                    }
                 />
+
+                {usernameErrors.length > 0 && (
+                    <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc mt-1">
+                        {usernameErrors.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
 
                 <input 
                     ref={emailInputRef}
-                    type="email" 
-                    className="flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 border-black"
+                    type="text" 
+                    className={`
+                        flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 
+                        ${emailHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
+                    `}
                     placeholder="Email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={
+                        (e) => {
+                            setEmail(e.target.value);
+                            setEmailHighlighted(false);
+                            setEmailErrors([]);
+                            setRegisterOutput([]);
+                            setRegisterOutputColor("black");
+                        }
+                    }
                 />
 
-                <div className="flex flex-row relative mx-4 my-2">
+                {emailErrors.length > 0 && (
+                    <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc mt-1">
+                        {emailErrors.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+                <div className="flex flex-row relative mx-4 mt-2">
                     <input 
                         ref={passwordInputRef}
                         type={passwordVisible ? "text" : "password"} 
-                        className="w-full flex justify-center p-2 rounded-md border-2 border-black"
+                        className={`
+                            w-full flex justify-center p-2 rounded-md border-2 
+                            ${passwordHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
+                        `}
                         placeholder="Password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={
+                            (e) => {
+                                setPassword(e.target.value);
+                                setPasswordHighlighted(false);
+                                setPasswordErrors([]);
+                                setRegisterOutput([]);
+                                setRegisterOutputColor("black");
+                            }
+                        }
                     />
                     <button 
                         type="button" 
@@ -118,15 +238,31 @@ const Page = () => {
                         {passwordVisible ? <FaEyeSlash /> : <FaEye />}
                     </button>
                 </div>
+                
+                {passwordErrors.length > 0 && (
+                    <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc mt-1">
+                        {passwordErrors.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
 
                 <button 
                     type="submit" 
-                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-2 rounded-md border-2 
+                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 
                     border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
                 >
                     <FaUser className="scale-160 ml-2 mr-4"/>
                     Create account
                 </button>
+
+                {registerOutput.length > 0 && (
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${registerOutputColor === "red" ? "text-red-600" : registerOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                        {registerOutput.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
             </form>
         </div>
     );
