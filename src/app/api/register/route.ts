@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     })
 
     // Sends verification email
-    const verifyUrl = `${process.env.APP_URL}/verify-email?token=${token}`
+    const verifyUrl = `${process.env.APP_URL}/verify-email/confirm?token=${token}`
     await resend.emails.send({
         from: process.env.EMAIL_FROM!,
         to: email,

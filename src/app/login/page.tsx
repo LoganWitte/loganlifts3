@@ -250,7 +250,7 @@ const Page = () => {
 
             <div className="flex flex-row justify-center mx-4 my-0 text-sm">
                  <Link 
-                    href={`/reset-password${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`} 
+                    href={`/reset-password/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`} 
                     className="text-blue-600 underline sm:no-underline hover:underline">Forgot password?</Link>
             </div>
 

@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         },
     })
 
-    const resetUrl = `${process.env.APP_URL}/reset-password?token=${token}`
+    const resetUrl = `${process.env.APP_URL}/reset-password/confirm?token=${token}`
 
     await resend.emails.send({
         from: process.env.EMAIL_FROM!,
