@@ -1,14 +1,16 @@
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { NextResponse } from 'next/server'
-import { MIN_PASSWORD_LENGTH } from '@/lib/constants'
+import { checkPassword } from '@/lib/credentialChecks'
 
 export async function POST(req: Request) {
-    const { token, newPassword } = await req.json()
 
-    if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) {
+    const { token, newPassword } = await req.json()
+    const passwordCheck = checkPassword(newPassword);
+
+    if (!passwordCheck.status) {
         return NextResponse.json(
-            { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` },
+            { error: 'Invalid password provided.', details: { password: passwordCheck.errors } },
             { status: 400 }
         )
     }

@@ -5,30 +5,135 @@ import Link from 'next/link'
 import { useState, useCallback, useEffect } from 'react';
 import { FaEnvelope, FaGithub, FaGoogle, FaEye, FaEyeSlash, FaKey } from 'react-icons/fa'
 import { useRouter } from 'next/navigation'
+import { checkEmail } from '@/lib/credentialChecks'
+import { loginWithMagicLink } from '@/lib/loginWithMagicLink'
 
 const Page = () => {
 
-    const { data: session } = useSession();
+    const { status } = useSession();
     const router = useRouter();
-
+    
     // Redirect to home page if user is already signed in
     useEffect(() => {
-        if(session) {
+        if(status === "authenticated") {
             router.push('/');
         }
-    }, [router, session]);
+    }, [router, status]);
 
-    // State variables
-    const [emailForLink, setEmailForLink] = useState('');
-    const [emailForCredentials, setEmailForCredentials] = useState('');
+    // Form inputs
+    const [credentialsEmail, setCredentialsEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [linkEmail, setLinkEmail] = useState('');
     const [passwordVisible, setPasswordVisible] = useState(false);
 
-    // Updates state variables when user navigates back to this page and the input fields are pre-filled 
+    // Form outputs
+    const [credentialsErrors, setCredentialsErrors] = useState("");
+    const [linkOutput, setLinkOutput] = useState("");
+    const [linkOutputColor, setLinkOutputColor] = useState<"black" | "red" | "green">("black");
+    const [credentialsEmailHighlighted, setCredentialsEmailHighlighted] = useState(false);
+    const [passwordHighlighted, setPasswordHighlighted] = useState(false);
+    const [linkEmailHighlighted, setLinkEmailHighlighted] = useState(false);
+
+    // Form submit handlers
+    async function handleCredentialsSubmit() {
+
+        // Clears output fields
+        setCredentialsErrors("");
+        setCredentialsEmailHighlighted(false);
+        setPasswordHighlighted(false);
+
+        // Checks validity of input fields
+        const emailPresent = credentialsEmail.length > 0;
+        const emailValid = emailPresent ? checkEmail(credentialsEmail).status : false;
+        const passwordPresent = password.length > 0;
+
+        // Populates 'credentialErrors' with errors from email and password fields
+        let credentialErrors: string = "";
+        if(passwordPresent) {
+            if(!emailPresent) {
+                credentialErrors = "Missing email.";
+                setCredentialsEmailHighlighted(true);
+            }
+            else if(!emailValid) {
+                credentialErrors = "Invalid email.";
+                setCredentialsEmailHighlighted(true);
+            }
+        }
+        else {
+            credentialErrors = 
+                !emailPresent ? "Missing email and password." :
+                !emailValid ? "Invalid email and missing password." :
+                "Missing password.";
+            setPasswordHighlighted(true);
+            if(!emailPresent || !emailValid) {
+                setCredentialsEmailHighlighted(true);
+            }
+        }
+
+        // Populates output with new errors if necessary
+        if(credentialErrors !== "") {
+            setCredentialsErrors(credentialErrors);
+            return;
+        }
+
+        // Signs in using credentials 'signIn' function
+        const result = await signIn('credentials', {
+            email: credentialsEmail,
+            password: password,
+            redirect: false,
+        });
+
+        // Populates output with new errors if necessary
+        if (result?.error) {
+            if (result.code === 'email_not_verified') {
+                setCredentialsErrors("Email is not verified.");
+            } 
+            else {
+                setCredentialsErrors("Invalid email or password.");
+            }
+        }
+    }
+    async function handleEmailLinkSubmit() {
+        // Clears output fields
+        setLinkOutput("");
+        setLinkOutputColor("black");
+        setLinkEmailHighlighted(false);
+
+        // Checks validity of input field
+        const emailPresent = linkEmail.length > 0;
+        const emailValid = emailPresent ? checkEmail(linkEmail).status : false;
+
+        // Populates output with error from email field if necessary
+        if(!emailPresent) {
+            setLinkOutput("Missing email.");
+            setLinkOutputColor("red");
+            setLinkEmailHighlighted(true);
+            return;
+        }
+        else if(!emailValid) {
+            setLinkOutput("Invalid email.");
+            setLinkOutputColor("red");
+            setLinkEmailHighlighted(true);
+            return;
+        }
+
+        // Signs in using 'loginWithMagicLink' function and populates output with new errors if necessary
+        const result = await loginWithMagicLink(linkEmail)
+        if(result.success) {
+            setLinkOutput("Success: check your email for the sign-in link.");
+            setLinkOutputColor("green");
+        }
+        else {
+            setLinkOutput(result.error);
+            setLinkOutputColor("red");
+        }
+    }
+
+    // Updates form inputs when user navigates back to this page and the input fields are pre-filled 
     // with their previous values (e.g. after a failed login attempt)
     const credentialEmailInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== emailForCredentials) {
-            setEmailForCredentials(node.value);
+        if(node !== null && node.value !== credentialsEmail) {
+            setCredentialsEmail(node.value);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -39,22 +144,14 @@ const Page = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const emailLinkInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== emailForLink) {
-            setEmailForLink(node.value);
+        if(node !== null && node.value !== linkEmail) {
+            setLinkEmail(node.value);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    function handleEmailLinkSubmit() {
-        return;
-    }
-
-    function handleCredentialsSubmit() {
-        return;
-    }
-
     return(
-        <div className="flex flex-col p-4 m-4 bg-slate-200 border border-black text-black">
+        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border border-black text-black min-w-full sm:min-w-160 w-full sm:w-fit">
             
             <div className="flex flex-row justify-center text-2xl font-semibold mb-2">
                 Sign in to LoganLifts
@@ -89,27 +186,38 @@ const Page = () => {
             >
                 <input 
                     ref={credentialEmailInputRef}
-                    type="email" 
-                    className="flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 border-black"
+                    type="text" 
+                    className={`flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 ${credentialsEmailHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}`}
                     placeholder="Email"
-                    value={emailForCredentials}
-                    onChange={(e) => setEmailForCredentials(e.target.value)}
+                    value={credentialsEmail}
+                    onChange={
+                        (e) => {
+                            setCredentialsEmail(e.target.value);
+                            setCredentialsEmailHighlighted(false);
+                            setCredentialsErrors("");
+                        }
+                    }
                 />
 
                 <div className="flex flex-row relative mx-4 my-2">
                     <input 
                         ref={credentialPasswordInputRef}
                         type={passwordVisible ? "text" : "password"} 
-                        className="w-full flex justify-center p-2 rounded-md border-2 border-black"
+                        className={`w-full flex justify-center p-2 rounded-md border-2 ${passwordHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}`}
                         placeholder="Password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={
+                            (e) => {
+                                setPassword(e.target.value);
+                                setPasswordHighlighted(false);
+                                setCredentialsErrors("");
+                            }
+                        }
                     />
                     <button 
                         type="button" 
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:cursor-pointer rounded-full p-1 scale-125 hover:bg-stone-400 opacity-75"
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        onClick={(e) => setPasswordVisible(!passwordVisible)}
+                        onClick={() => setPasswordVisible(!passwordVisible)}
                     >
                         {passwordVisible ? <FaEyeSlash /> : <FaEye />}
                     </button>
@@ -123,12 +231,27 @@ const Page = () => {
                     <FaKey className="scale-160 ml-2 mr-4"/>
                     Sign in with credentials
                 </button>
+
+                {credentialsErrors !== "" && credentialsErrors !== "Email is not verified." && (
+                    <div className="flex flex-col items-center justify-center text-sm text-red-600">
+                        {credentialsErrors}
+                    </div>
+                )}
+
+                {credentialsErrors === "Email is not verified." && (
+                    <div className="flex flex-col items-center justify-center text-sm">
+                        <div className='text-red-600'>{credentialsErrors}</div>
+                        <Link href={`/verify-email/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`} 
+                            className='text-blue-600 underline sm:no-underline hover:underline'>Click here to verify email.</Link>
+                    </div>
+                )}
+
             </form>
 
             <div className="flex flex-row justify-center mx-4 my-0 text-sm">
                  <Link 
-                    href={`/reset-password${emailForCredentials ? "?email=" + emailForCredentials : emailForLink ? "?email=" + emailForLink : ""}`} 
-                    className="text-blue-600 hover:underline">Forgot password?</Link>
+                    href={`/reset-password${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`} 
+                    className="text-blue-600 underline sm:no-underline hover:underline">Forgot password?</Link>
             </div>
 
             <div className="flex flex-row items-center justify-evenly">
@@ -145,13 +268,21 @@ const Page = () => {
                 }}
             >
                 <input 
-                    type="email" 
-                    className="flex flex-row items-center justify-center p-2 mx-4 mt-2 rounded-md border-2 border-black"
+                    type="text" 
+                    className={`flex flex-row items-center justify-center p-2 mx-4 mt-2 rounded-md border-2 ${linkEmailHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}`}
                     placeholder="Email"
-                    value={emailForLink}
-                    onChange={(e) => setEmailForLink(e.target.value)}
+                    value={linkEmail}
+                    onChange={
+                        (e) => {
+                            setLinkEmail(e.target.value);
+                            setLinkOutput("");
+                            setLinkOutputColor("black");
+                            setLinkEmailHighlighted(false);
+                        }
+                    }
                     ref={emailLinkInputRef}
                 />
+
                 <button 
                     type="submit" 
                     className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 
@@ -160,6 +291,16 @@ const Page = () => {
                     <FaEnvelope className="scale-160 ml-2 mr-4"/>
                     Sign in with email link
                 </button>
+
+                {linkOutput !== "" && (
+                    <div className={
+                        `flex flex-col items-center justify-center text-sm 
+                        ${linkOutputColor === "red" ? "text-red-600" : linkOutputColor === "green" ? "text-green-500" : "text-black"}`
+                    }>
+                        {linkOutput}
+                    </div>
+                )}
+
             </form>
         </div>
     );

@@ -1,7 +1,4 @@
 'use client'
-import { useState } from 'react'
-import { useSession, signIn, signOut } from 'next-auth/react'
-import { loginWithMagicLink } from '@/lib/loginWithMagicLink'
 
 const Page = () => {
   const { data: session, status } = useSession()
@@ -303,4 +300,4 @@ const Page = () => {
   )
 }
 
-export default Page
+export default Page;

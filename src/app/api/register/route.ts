@@ -3,7 +3,7 @@ import { Resend } from 'resend'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { NextResponse } from 'next/server'
-import { MIN_PASSWORD_LENGTH } from '@/lib/constants'
+import { checkUsername, checkEmail, checkPassword } from '@/lib/credentialChecks'
 
 const resend = new Resend(process.env.AUTH_RESEND_KEY)
 
@@ -13,11 +13,15 @@ const convertToProperName = (name: string) => {
 }
 
 export async function POST(req: Request) {
-    const { email, password, name } = await req.json()
+    const { name, email, password } = await req.json()
 
-    if (!email || !password || password.length < MIN_PASSWORD_LENGTH) {
+    const usernameCheck = checkUsername(name);
+    const emailCheck = checkEmail(email);
+    const passwordCheck = checkPassword(password);
+
+    if (!usernameCheck.status || !emailCheck.status || !passwordCheck.status) {
         return NextResponse.json(
-            { error: `Missing fields or password must be at least ${MIN_PASSWORD_LENGTH} characters` },
+            { error: 'Invalid credentials provided.', details: { username: usernameCheck.errors, email: emailCheck.errors, password: passwordCheck.errors } },
             { status: 400 }
         )
     }

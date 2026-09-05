@@ -28,8 +28,8 @@ const Page = () => {
     const [usernameErrors, setUsernameErrors] = useState<string[]>([]);
     const [emailErrors, setEmailErrors] = useState<string[]>([]);
     const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
-    const [registerOutput, setRegisterOutput] = useState<string[]>([]);
-    const [registerOutputColor, setRegisterOutputColor] = useState<"black" | "red" | "green">("black");
+    const [signUpOutput, setSignUpOutput] = useState<string[]>([]);
+    const [signUpOutputColor, setSignUpOutputColor] = useState<"black" | "red" | "green">("black");
     const [usernameHighlighted, setUsernameHighlighted] = useState(false);
     const [emailHighlighted, setEmailHighlighted] = useState(false);
     const [passwordHighlighted, setPasswordHighlighted] = useState(false);
@@ -38,8 +38,8 @@ const Page = () => {
     async function handleRegisterSubmit() {
         
         // Clears output fields
-        setRegisterOutput([]);
-        setRegisterOutputColor("black");
+        setSignUpOutput([]);
+        setSignUpOutputColor("black");
         setUsernameHighlighted(false);
         setUsernameErrors([]);
         setEmailHighlighted(false);
@@ -85,13 +85,13 @@ const Page = () => {
         // Displays error / success from above endpoint
         const data = await result.json();
         if (!result.ok) {
-            setRegisterOutput(data.error ?? "Something went wrong. Try again later.");
-            setRegisterOutputColor("red");
+            setSignUpOutput([data.error ?? "Something went wrong. Try again later."]);
+            setSignUpOutputColor("red");
             return;
         }
         else {
-            setRegisterOutput(["Account created — check your email to verify before signing in."]);
-            setRegisterOutputColor("green");
+            setSignUpOutput(["Account created — check your email to verify before signing in."]);
+            setSignUpOutputColor("green");
             setUsername("");
             setEmail("");
             setPassword("");
@@ -167,8 +167,8 @@ const Page = () => {
                             setUsername(e.target.value);
                             setUsernameHighlighted(false);
                             setUsernameErrors([]);
-                            setRegisterOutput([]);
-                            setRegisterOutputColor("black");
+                            setSignUpOutput([]);
+                            setSignUpOutputColor("black");
                         }
                     }
                 />
@@ -195,8 +195,8 @@ const Page = () => {
                             setEmail(e.target.value);
                             setEmailHighlighted(false);
                             setEmailErrors([]);
-                            setRegisterOutput([]);
-                            setRegisterOutputColor("black");
+                            setSignUpOutput([]);
+                            setSignUpOutputColor("black");
                         }
                     }
                 />
@@ -224,8 +224,8 @@ const Page = () => {
                                 setPassword(e.target.value);
                                 setPasswordHighlighted(false);
                                 setPasswordErrors([]);
-                                setRegisterOutput([]);
-                                setRegisterOutputColor("black");
+                                setSignUpOutput([]);
+                                setSignUpOutputColor("black");
                             }
                         }
                     />
@@ -256,9 +256,9 @@ const Page = () => {
                     Create account
                 </button>
 
-                {registerOutput.length > 0 && (
-                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${registerOutputColor === "red" ? "text-red-600" : registerOutputColor === "green" ? "text-green-600" : "text-black"}`}>
-                        {registerOutput.map((error, i) => {
+                {signUpOutput.length > 0 && (
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${signUpOutputColor === "red" ? "text-red-600" : signUpOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                        {signUpOutput.map((error, i) => {
                             return <li key={i} className="mx-7">{error}</li>
                         })}
                     </ul>
