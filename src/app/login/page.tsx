@@ -12,10 +12,10 @@ const Page = () => {
 
     const { status } = useSession();
     const router = useRouter();
-    
+
     // Redirect to home page if user is already signed in
     useEffect(() => {
-        if(status === "authenticated") {
+        if (status === "authenticated") {
             router.push('/');
         }
     }, [router, status]);
@@ -49,29 +49,29 @@ const Page = () => {
 
         // Populates 'credentialErrors' with errors from email and password fields
         let credentialErrors: string = "";
-        if(passwordPresent) {
-            if(!emailPresent) {
+        if (passwordPresent) {
+            if (!emailPresent) {
                 credentialErrors = "Missing email.";
                 setCredentialsEmailHighlighted(true);
             }
-            else if(!emailValid) {
+            else if (!emailValid) {
                 credentialErrors = "Invalid email.";
                 setCredentialsEmailHighlighted(true);
             }
         }
         else {
-            credentialErrors = 
+            credentialErrors =
                 !emailPresent ? "Missing email and password." :
-                !emailValid ? "Invalid email and missing password." :
-                "Missing password.";
+                    !emailValid ? "Invalid email and missing password." :
+                        "Missing password.";
             setPasswordHighlighted(true);
-            if(!emailPresent || !emailValid) {
+            if (!emailPresent || !emailValid) {
                 setCredentialsEmailHighlighted(true);
             }
         }
 
         // Populates output with new errors if necessary
-        if(credentialErrors !== "") {
+        if (credentialErrors !== "") {
             setCredentialsErrors(credentialErrors);
             return;
         }
@@ -87,7 +87,7 @@ const Page = () => {
         if (result?.error) {
             if (result.code === 'email_not_verified') {
                 setCredentialsErrors("Email is not verified.");
-            } 
+            }
             else {
                 setCredentialsErrors("Invalid email or password.");
             }
@@ -104,13 +104,13 @@ const Page = () => {
         const emailValid = emailPresent ? checkEmail(linkEmail).status : false;
 
         // Populates output with error from email field if necessary
-        if(!emailPresent) {
+        if (!emailPresent) {
             setLinkOutput("Missing email.");
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
             return;
         }
-        else if(!emailValid) {
+        else if (!emailValid) {
             setLinkOutput("Invalid email.");
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
@@ -119,7 +119,7 @@ const Page = () => {
 
         // Signs in using 'loginWithMagicLink' function and populates output with new errors if necessary
         const result = await loginWithMagicLink(linkEmail)
-        if(result.success) {
+        if (result.success) {
             setLinkOutput("Success: check your email for the sign-in link.");
             setLinkOutputColor("green");
         }
@@ -132,42 +132,42 @@ const Page = () => {
     // Updates form inputs when user navigates back to this page and the input fields are pre-filled 
     // with their previous values (e.g. after a failed login attempt)
     const credentialEmailInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== credentialsEmail) {
+        if (node !== null && node.value !== credentialsEmail) {
             setCredentialsEmail(node.value);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const credentialPasswordInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== password) {
+        if (node !== null && node.value !== password) {
             setPassword(node.value);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const emailLinkInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== linkEmail) {
+        if (node !== null && node.value !== linkEmail) {
             setLinkEmail(node.value);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return(
-        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b border-l border-r border-black text-black min-w-full sm:min-w-160 w-full sm:w-fit">
-            
+    return (
+        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b border-l border-r border-black text-black min-w-full sm:min-w-160">
+
             <div className="flex flex-row justify-center text-2xl font-semibold mb-2">
                 Sign in to LoganLifts
             </div>
 
             <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(64.75%_0.1603_148.5)] hover:bg-[oklch(58.75%_0.1603_148.5)] text-black
                                hover:cursor-pointer"
-                               onClick={() => signIn('google')}>
-                <FaGoogle className="scale-160 ml-2 mr-4"/>
+                onClick={() => signIn('google')}>
+                <FaGoogle className="scale-160 ml-2 mr-4" />
                 Continue with Google
             </button>
 
             <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(0.5502_0.2585_295.66)] hover:bg-[oklch(0.5202_0.2585_295.66)] text-black
                                hover:cursor-pointer"
-                               onClick={() => signIn('github')}>
-                <FaGithub className="scale-160 ml-2 mr-4"/>
+                onClick={() => signIn('github')}>
+                <FaGithub className="scale-160 ml-2 mr-4" />
                 Continue with GitHub
             </button>
 
@@ -177,16 +177,16 @@ const Page = () => {
                 <div className="grow border-t border-black" />
             </div>
 
-            <form 
+            <form
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
                     handleCredentialsSubmit();
                 }}
             >
-                <input 
+                <input
                     ref={credentialEmailInputRef}
-                    type="text" 
+                    type="text"
                     className={`flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 ${credentialsEmailHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}`}
                     placeholder="Email"
                     value={credentialsEmail}
@@ -200,9 +200,9 @@ const Page = () => {
                 />
 
                 <div className="flex flex-row relative mx-4 my-2">
-                    <input 
+                    <input
                         ref={credentialPasswordInputRef}
-                        type={passwordVisible ? "text" : "password"} 
+                        type={passwordVisible ? "text" : "password"}
                         className={`w-full flex justify-center p-2 rounded-md border-2 ${passwordHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}`}
                         placeholder="Password"
                         value={password}
@@ -214,8 +214,8 @@ const Page = () => {
                             }
                         }
                     />
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:cursor-pointer rounded-full p-1 scale-125 hover:bg-stone-400 opacity-75"
                         onClick={() => setPasswordVisible(!passwordVisible)}
                     >
@@ -223,12 +223,12 @@ const Page = () => {
                     </button>
                 </div>
 
-                <button 
-                    type="submit" 
-                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-2 rounded-md border-2 
+                <button
+                    type="submit"
+                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-1 rounded-md border-2 
                     border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
                 >
-                    <FaKey className="scale-160 ml-2 mr-4"/>
+                    <FaKey className="scale-160 ml-2 mr-4" />
                     Sign in with credentials
                 </button>
 
@@ -241,16 +241,16 @@ const Page = () => {
                 {credentialsErrors === "Email is not verified." && (
                     <div className="flex flex-col items-center justify-center text-sm">
                         <div className='text-red-600'>{credentialsErrors}</div>
-                        <Link href={`/verify-email/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`} 
+                        <Link href={`/verify-email/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`}
                             className='text-blue-600 underline sm:no-underline hover:underline'>Click here to verify email.</Link>
                     </div>
                 )}
 
             </form>
 
-            <div className="flex flex-row justify-center mx-4 my-0 text-sm">
-                 <Link 
-                    href={`/reset-password/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`} 
+            <div className="flex flex-row justify-center mx-4 text-sm">
+                <Link
+                    href={`/reset-password/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`}
                     className="text-blue-600 underline sm:no-underline hover:underline">Forgot password?</Link>
             </div>
 
@@ -260,15 +260,15 @@ const Page = () => {
                 <div className="grow border-t border-black" />
             </div>
 
-            <form 
+            <form
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
                     handleEmailLinkSubmit();
                 }}
             >
-                <input 
-                    type="text" 
+                <input
+                    type="text"
                     className={`flex flex-row items-center justify-center p-2 mx-4 mt-2 rounded-md border-2 ${linkEmailHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}`}
                     placeholder="Email"
                     value={linkEmail}
@@ -283,18 +283,18 @@ const Page = () => {
                     ref={emailLinkInputRef}
                 />
 
-                <button 
-                    type="submit" 
-                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 
+                <button
+                    type="submit"
+                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 
                     border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
                 >
-                    <FaEnvelope className="scale-160 ml-2 mr-4"/>
+                    <FaEnvelope className="scale-160 ml-2 mr-4" />
                     Sign in with email link
                 </button>
 
                 {linkOutput !== "" && (
                     <div className={
-                        `flex flex-col items-center justify-center text-sm 
+                        `flex flex-col items-center justify-center text-sm mt-1 mb-3
                         ${linkOutputColor === "red" ? "text-red-600" : linkOutputColor === "green" ? "text-green-500" : "text-black"}`
                     }>
                         {linkOutput}

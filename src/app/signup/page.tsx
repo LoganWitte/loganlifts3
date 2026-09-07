@@ -2,7 +2,7 @@
 
 import { useSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState, useCallback, useEffect} from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { FaGithub, FaGoogle, FaEye, FaEyeSlash, FaUser } from 'react-icons/fa'
 import { checkUsername, checkEmail, checkPassword } from '@/lib/credentialChecks'
 
@@ -10,10 +10,10 @@ const Page = () => {
 
     const { status } = useSession();
     const router = useRouter();
-    
+
     // Redirect to home page if user is already signed in
     useEffect(() => {
-        if(status === "authenticated") {
+        if (status === "authenticated") {
             router.push('/');
         }
     }, [router, status]);
@@ -36,7 +36,7 @@ const Page = () => {
 
     // Form submit handlers
     async function handleRegisterSubmit() {
-        
+
         // Clears output fields
         setSignUpOutput([]);
         setSignUpOutputColor("black");
@@ -53,24 +53,24 @@ const Page = () => {
         const passwordCheck = checkPassword(password);
 
         // Highlights invalid input fields & displays their errors
-        if(!usernameCheck.status) {
+        if (!usernameCheck.status) {
             setUsernameErrors(usernameCheck.errors);
             setUsernameHighlighted(true);
         }
-        if(!emailCheck.status) {
+        if (!emailCheck.status) {
             setEmailErrors(emailCheck.errors);
             setEmailHighlighted(true);
         }
-        if(!passwordCheck.status) {
+        if (!passwordCheck.status) {
             setPasswordErrors(passwordCheck.errors);
             setPasswordHighlighted(true);
         }
 
         // Returns before hitting API if any inputs are invalid
-        if(!usernameCheck.status || !emailCheck.status || !passwordCheck.status) {
+        if (!usernameCheck.status || !emailCheck.status || !passwordCheck.status) {
             return;
         }
-        
+
         // Signs up using '/api/register' endpoint
         const result = await fetch('/api/register', {
             method: 'POST',
@@ -101,42 +101,42 @@ const Page = () => {
     // Updates state variables when user navigates back to this page and the input fields are pre-filled 
     // with their previous values (e.g. after a failed login attempt)
     const usernameInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== username) {
+        if (node !== null && node.value !== username) {
             setUsername(node.value);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const emailInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== email) {
+        if (node !== null && node.value !== email) {
             setEmail(node.value);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const passwordInputRef = useCallback((node: HTMLInputElement | null) => {
-        if(node !== null && node.value !== password) {
+        if (node !== null && node.value !== password) {
             setPassword(node.value);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps 
+        // eslint-disable-next-line react-hooks/exhaustive-deps 
     }, []);
 
-    return(
-        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b border-l border-r border-black text-black min-w-full sm:min-w-160 w-full sm:w-fit">
-            
+    return (
+        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b border-l border-r border-black text-black min-w-full sm:min-w-160">
+
             <div className="flex flex-row justify-center text-2xl font-semibold mb-2">
                 Sign up for LoganLifts
             </div>
 
             <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(64.75%_0.1603_148.5)] hover:bg-[oklch(58.75%_0.1603_148.5)] text-black
                                hover:cursor-pointer"
-                               onClick={() => signIn('google')}>
-                <FaGoogle className="scale-160 ml-2 mr-4"/>
+                onClick={() => signIn('google')}>
+                <FaGoogle className="scale-160 ml-2 mr-4" />
                 Continue with Google
             </button>
 
             <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(0.5502_0.2585_295.66)] hover:bg-[oklch(0.5202_0.2585_295.66)] text-black
                                hover:cursor-pointer"
-                               onClick={() => signIn('github')}>
-                <FaGithub className="scale-160 ml-2 mr-4"/>
+                onClick={() => signIn('github')}>
+                <FaGithub className="scale-160 ml-2 mr-4" />
                 Continue with GitHub
             </button>
 
@@ -146,16 +146,16 @@ const Page = () => {
                 <div className="grow border-t border-black" />
             </div>
 
-            <form 
+            <form
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
                     handleRegisterSubmit();
                 }}
             >
-                <input 
+                <input
                     ref={usernameInputRef}
-                    type="text" 
+                    type="text"
                     className={`
                         flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 
                         ${usernameHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
@@ -181,9 +181,9 @@ const Page = () => {
                     </ul>
                 )}
 
-                <input 
+                <input
                     ref={emailInputRef}
-                    type="text" 
+                    type="text"
                     className={`
                         flex flex-row justify-center p-2 mx-4 mt-2 rounded-md border-2 
                         ${emailHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
@@ -210,9 +210,9 @@ const Page = () => {
                 )}
 
                 <div className="flex flex-row relative mx-4 mt-2">
-                    <input 
+                    <input
                         ref={passwordInputRef}
-                        type={passwordVisible ? "text" : "password"} 
+                        type={passwordVisible ? "text" : "password"}
                         className={`
                             w-full flex justify-center p-2 rounded-md border-2 
                             ${passwordHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
@@ -229,8 +229,8 @@ const Page = () => {
                             }
                         }
                     />
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:cursor-pointer rounded-full p-1 scale-125 hover:bg-stone-400 opacity-75"
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         onClick={(e) => setPasswordVisible(!passwordVisible)}
@@ -238,7 +238,7 @@ const Page = () => {
                         {passwordVisible ? <FaEyeSlash /> : <FaEye />}
                     </button>
                 </div>
-                
+
                 {passwordErrors.length > 0 && (
                     <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc mt-1">
                         {passwordErrors.map((error, i) => {
@@ -247,17 +247,17 @@ const Page = () => {
                     </ul>
                 )}
 
-                <button 
-                    type="submit" 
-                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 
-                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
+                <button
+                    type="submit"
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 ${signUpOutput.length > 0 ? "mb-1" : "mb-3"} rounded-md border-2 
+                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer`}
                 >
-                    <FaUser className="scale-160 ml-2 mr-4"/>
+                    <FaUser className="scale-160 ml-2 mr-4" />
                     Create account
                 </button>
 
                 {signUpOutput.length > 0 && (
-                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${signUpOutputColor === "red" ? "text-red-600" : signUpOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mb-3 ${signUpOutputColor === "red" ? "text-red-600" : signUpOutputColor === "green" ? "text-green-600" : "text-black"}`}>
                         {signUpOutput.map((error, i) => {
                             return <li key={i} className="mx-7">{error}</li>
                         })}

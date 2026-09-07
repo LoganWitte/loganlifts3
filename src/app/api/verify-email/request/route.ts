@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     const token = crypto.randomBytes(32).toString('hex')
-    const expiry = new Date(Date.now() + 1000 * 60 * 60 * 24) // 24h
+    const expiry = new Date(Date.now() + 1000 * 60 * 30) // 30m
 
     await prisma.user.update({
         where: { email },
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         from: process.env.EMAIL_FROM!,
         to: email,
         subject: 'LoganLifts - Verify your email',
-        html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email. This link expires in 24 hours.</p>`,
+        html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email. This link expires in 30 minutes.</p>`,
     })
 
     return NextResponse.json({ ok: true })

@@ -3,27 +3,36 @@ import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { RESEND_COOLDOWN_MS } from '@/lib/constants'
+import { checkEmail } from '@/lib/credentialChecks'
 
 const resend = new Resend(process.env.AUTH_RESEND_KEY)
 
 export async function POST(req: Request) {
+
     const { email } = await req.json()
+
+    // Makes sure email address is valid before continuing
+    if (!checkEmail(email).status) {
+        // Does not reveal whether email address exists
+        return NextResponse.json({ ok: true })
+    }
 
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
-        return NextResponse.json({ ok: true }) // don't reveal whether email exists
+        // Does not reveal whether email address exists
+        return NextResponse.json({ ok: true })
     }
 
     if (user.lastVerificationEmailSentAt) {
         const elapsed = Date.now() - user.lastVerificationEmailSentAt.getTime()
         if (elapsed < RESEND_COOLDOWN_MS) {
-            // Same generic response as a successful send — avoids revealing account existence
+            // Does not reveal whether email address exists
             return NextResponse.json({ ok: true })
         }
     }
 
     const token = crypto.randomBytes(32).toString('hex')
-    const expiry = new Date(Date.now() + 1000 * 60 * 30)
+    const expiry = new Date(Date.now() + 1000 * 60 * 30) // 30m
 
     await prisma.user.update({
         where: { email },
@@ -34,7 +43,14 @@ export async function POST(req: Request) {
         },
     })
 
-    const resetUrl = `${process.env.APP_URL}/reset-password/confirm?token=${token}`
+    const foundName = user.name !== null && user.name.length > 0;
+    let resetUrl: string;
+    if (foundName) {
+        resetUrl = `${process.env.APP_URL}/reset-password/confirm?name=${user.name}&email=${user.email}&token=${token}`;
+    }
+    else {
+        resetUrl = `${process.env.APP_URL}/reset-password/confirm?email=${user.email}&token=${token}`;
+    }
 
     await resend.emails.send({
         from: process.env.EMAIL_FROM!,
