@@ -41,7 +41,7 @@ const Page = () => {
     async function handleRegisterSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading1(true);
 
         // Clears output fields
@@ -76,7 +76,7 @@ const Page = () => {
         // Returns before hitting API if any inputs are invalid
         if (!usernameCheck.status || !emailCheck.status || !passwordCheck.status) {
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading1(false);
             return;
         }
@@ -98,7 +98,7 @@ const Page = () => {
             setSignUpOutput([data.error ?? "Something went wrong. Try again later."]);
             setSignUpOutputColor("red");
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading1(false);
             return;
         }
@@ -109,7 +109,7 @@ const Page = () => {
             setEmail("");
             setPassword("");
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading1(false);
             return;
         }
@@ -117,26 +117,26 @@ const Page = () => {
     async function handleGoogleSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading2(true);
 
         await signIn('google');
 
         document.body.style.cursor = "default";
-        console.log("default")
+
         setFormLoading2(false);
         return;
     }
     async function handleGithubSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading3(true);
 
         await signIn('github');
 
         document.body.style.cursor = "default";
-        console.log("default")
+
         setFormLoading3(false);
         return;
     }

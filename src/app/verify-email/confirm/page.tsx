@@ -1,8 +1,14 @@
 'use client'
 
+import { Suspense } from "react"
+import ConfirmForm from "./ConfirmForm"
+import ConfirmLoading from "./ConfirmLoading"
+
 const Page = () => {
-    return(
-        <div className=""></div>
+    return (
+        <Suspense fallback={<ConfirmLoading />}>
+            <ConfirmForm />
+        </Suspense>
     );
 }
 

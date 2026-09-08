@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     })
 
     if (!user) {
-        return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
+        return NextResponse.json({ error: 'Error: Invalid or expired token' }, { status: 400 })
     }
 
     await prisma.user.update({

@@ -45,7 +45,7 @@ const Page = () => {
     async function handleCredentialsSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading1(true);
 
         // Clears output fields
@@ -85,7 +85,7 @@ const Page = () => {
         if (credentialErrors !== "") {
             setCredentialsErrors(credentialErrors);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading1(false);
             return;
         }
@@ -107,14 +107,14 @@ const Page = () => {
             }
         }
         document.body.style.cursor = "default";
-        console.log("default")
+
         setFormLoading1(false);
         return;
     }
     async function handleEmailLinkSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading2(true);
 
         // Clears output fields
@@ -132,7 +132,7 @@ const Page = () => {
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading2(false);
             return;
         }
@@ -141,7 +141,7 @@ const Page = () => {
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading2(false);
             return;
         }
@@ -157,33 +157,33 @@ const Page = () => {
             setLinkOutputColor("red");
         }
         document.body.style.cursor = "default";
-        console.log("default")
+
         setFormLoading2(false);
         return;
     }
     async function handleGoogleSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading3(true);
 
         await signIn('google');
 
         document.body.style.cursor = "default";
-        console.log("default")
+
         setFormLoading3(false);
         return;
     }
     async function handleGithubSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading4(true);
 
         await signIn('github');
 
         document.body.style.cursor = "default";
-        console.log("default")
+
         setFormLoading4(false);
         return;
     }

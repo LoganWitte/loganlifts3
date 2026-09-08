@@ -23,8 +23,8 @@ const Page = () => {
     // Handles form submission
     async function handleSubmit() {
 
+        // Loading startup
         document.body.style.cursor = "wait";
-        console.log("wait")
         setFormLoading(true);
 
         // Clears output fields
@@ -41,7 +41,7 @@ const Page = () => {
             setEmailHighlighted(true);
             setResponseIsError(true);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading(false);
             return;
         }
@@ -50,7 +50,7 @@ const Page = () => {
             setEmailHighlighted(true);
             setResponseIsError(true);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading(false);
             return;
         }
@@ -71,7 +71,7 @@ const Page = () => {
             setEmail("");
             setResponseIsError(false);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading(false);
             return;
         }
@@ -79,7 +79,7 @@ const Page = () => {
             setSubmitResponse("Error: Server failed to respond. Confirm internet connection or try again later.");
             setResponseIsError(true);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading(false);
             return;
         }

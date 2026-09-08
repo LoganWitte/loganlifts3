@@ -66,7 +66,7 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
     async function handleSubmit() {
 
         document.body.style.cursor = "wait";
-        console.log("wait")
+
         setFormLoading(true);
 
 
@@ -82,7 +82,7 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
             setSubmitResponse(passwordCheck.errors);
             setResponseIsError(true);
             document.body.style.cursor = "default";
-            console.log("default")
+
             setFormLoading(false);
             return;
         }
@@ -103,7 +103,6 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
             setSubmitResponse([data.error ?? "Something went wrong. Try again later."]);
             setResponseIsError(true);
             document.body.style.cursor = "default";
-            console.log("default")
             setFormLoading(false);
             return;
         }
@@ -112,7 +111,6 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         setSubmitResponse(["Success! Password has been reset. Sign in to continue."]);
         setResponseIsError(false);
         document.body.style.cursor = "default";
-        console.log("default")
         setFormLoading(false);
         return;
 
@@ -124,8 +122,7 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         if (node !== null && node.value !== password) {
             setPassword(node.value);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [password]);
 
     return resetToken !== undefined ? (
         <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160">
@@ -181,20 +178,16 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
                     </button>
                 </div>
                 {submitResponse.length > 0 && (
-                    <>
-                        <ul className={`w-full flex flex-col items-start text-sm list-disc mb-1 ${responseIsError ? "text-red-600" : "text-green-600"}`}>
-                            {submitResponse.map((error, i) => {
-                                return <li key={i} className="mx-7">{error}</li>
-                            })}
-                            {!responseIsError &&
-                                //href={`/reset-password/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`}
-                                <li className="mx-7 text-black">
-                                    Click<Link className="mx-1 text-blue-600 underline sm:no-underline hover:underline" href={`/login${(sanitizedEmail !== null) ? ("?email=" + sanitizedEmail) : ""}`}>here</Link>to sign in.
-                                </li>
-                            }
-                        </ul>
-
-                    </>
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mb-1 ${responseIsError ? "text-red-600" : "text-green-600"}`}>
+                        {submitResponse.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                        {!responseIsError &&
+                            <li className="mx-7 text-black">
+                                Click<Link className="mx-1 text-blue-600 underline sm:no-underline hover:underline" href={`/login${(sanitizedEmail !== null) ? ("?email=" + sanitizedEmail) : ""}`}>here</Link>to sign in.
+                            </li>
+                        }
+                    </ul>
                 )}
                 <button
                     type="submit"
@@ -214,12 +207,12 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
             </div>
 
             <div className="flex flex-row justify-center text-lg mx-4 mb-2">
-                Error: invalid token. Try clicking your the link in your inbox again, or send another email link if that does not work.
+                Error: Invalid token. Try clicking your the link in your inbox again, or send another email link if that does not work.
             </div>
 
             <div className="flex flex-row justify-center text-lg mx-4 mb-2">
                 <Link
-                    href={`/reset-password/request${sanitizedEmail ? "?email=" + email : ""}`}
+                    href={`/reset-password/request${sanitizedEmail ? "?email=" + sanitizedEmail : ""}`}
                     className="text-blue-600 underline sm:no-underline hover:underline mr-1">Click here
                 </Link>
                 to request another email link.

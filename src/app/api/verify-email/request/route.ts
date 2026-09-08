@@ -37,8 +37,16 @@ export async function POST(req: Request) {
         },
     })
 
+    const foundName = user.name !== null && user.name.length > 0;
+    let verifyUrl: string;
+    if (foundName) {
+        verifyUrl = `${process.env.APP_URL}/verify-email/confirm?name=${user.name}&email=${user.email}&token=${token}`;
+    }
+    else {
+        verifyUrl = `${process.env.APP_URL}/verify-email/confirm?email=${user.email}&token=${token}`;
+    }
+
     // Sends verification email
-    const verifyUrl = `${process.env.APP_URL}/verify-email/confirm?token=${token}`
     await resend.emails.send({
         from: process.env.EMAIL_FROM!,
         to: email,
