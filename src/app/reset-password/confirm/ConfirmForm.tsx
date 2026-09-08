@@ -1,20 +1,48 @@
 'use client'
 
-import { useSearchParams } from "next/navigation";
-import { useState, useCallback } from 'react';
+import { usePathname, useSearchParams } from "next/navigation";
+import { useState, useCallback, useEffect } from 'react';
 import { FaKey, FaEye, FaEyeSlash } from 'react-icons/fa'
 import { checkPassword } from "@/lib/credentialChecks";
-import Link from 'next/link'
+import Link from 'next/link';
 import { MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_EMAIL_LENGTH, MAX_EMAIL_LENGTH } from "@/lib/constants";
 import { checkUsername, checkEmail } from "@/lib/credentialChecks";
+import { useRouter } from 'next/navigation';
 
 interface ConfirmFormProps {
-    resetToken: string | undefined;
+    tokenFromLocalStorage: string | undefined;
 }
 
-const Page = ({ resetToken: resetToken }: ConfirmFormProps) => {
+const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps) => {
 
     const searchParams = useSearchParams();
+
+    const tokenFromParam = searchParams.get('token');
+    const [resetToken, setResetToken] = useState<string | undefined>((tokenFromParam !== null && tokenFromParam.length > 0) ? tokenFromParam : tokenFromLocalStorage);
+
+    // Used to remove token from URL bar
+    const pathname = usePathname();
+    const router = useRouter();
+
+    // Removes token from URL bar (if present) and saves it to localStorage
+    // Prevents user from accidentally revealing their token and compromising thier password
+    useEffect(() => {
+
+        if (tokenFromParam !== null && tokenFromParam.length > 0) {
+
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('token');
+            const query = params.toString();
+            const newUrl = query ? `${pathname}?${query}` : pathname;
+            router.push(newUrl);
+
+            localStorage.setItem("resetToken", tokenFromParam);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setResetToken(tokenFromParam);
+        }
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     // Pulls data from searchParams
     const name: string | null = searchParams.get('name');
