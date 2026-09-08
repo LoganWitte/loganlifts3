@@ -194,20 +194,17 @@ const Page = () => {
         if (node !== null && node.value !== credentialsEmail) {
             setCredentialsEmail(node.value);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [credentialsEmail]);
     const credentialPasswordInputRef = useCallback((node: HTMLInputElement | null) => {
         if (node !== null && node.value !== password) {
             setPassword(node.value);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [password]);
     const emailLinkInputRef = useCallback((node: HTMLInputElement | null) => {
         if (node !== null && node.value !== linkEmail) {
             setLinkEmail(node.value);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [linkEmail]);
 
     return (
         <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160">
