@@ -17,6 +17,9 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
 
     const searchParams = useSearchParams();
 
+    // Pulls data from searchParams
+    const name: string | null = searchParams.get('name');
+    const email = searchParams.get('email');
     const tokenFromParam = searchParams.get('token');
     const [resetToken, setResetToken] = useState<string | undefined>((tokenFromParam !== null && tokenFromParam.length > 0) ? tokenFromParam : tokenFromLocalStorage);
 
@@ -44,13 +47,8 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    // Pulls data from searchParams
-    const name: string | null = searchParams.get('name');
-    const email = searchParams.get('email');
-
     // Sanitizes data from searchParams, sets to null if invalid
-    // Note that page will work normally unless 'sanitizedToken' is null
-    // Otherwise, missing data will simply not be displayed
+    // Missing data here will simply not be displayed
     const sanitizedName = (name !== null && name.length >= MIN_USERNAME_LENGTH && name.length <= MAX_USERNAME_LENGTH && checkUsername(name).status) ? name : null;
     const sanitizedEmail = (email !== null && email.length >= MIN_EMAIL_LENGTH && email.length <= MAX_EMAIL_LENGTH && checkEmail(email).status) ? email : null;
 
@@ -114,7 +112,7 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
     }, []);
 
     return resetToken !== undefined ? (
-        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b border-l border-r border-black text-black min-w-full sm:min-w-160">
+        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160">
 
             <div className="flex flex-row justify-center text-2xl font-semibold mb-2">
                 Reset Password
@@ -166,11 +164,20 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
                     </button>
                 </div>
                 {submitResponse.length > 0 && (
-                    <ul className={`w-full flex flex-col items-start text-sm list-disc mb-1 ${responseIsError ? "text-red-600" : "text-green-600"}`}>
-                        {submitResponse.map((error, i) => {
-                            return <li key={i} className="mx-7">{error}</li>
-                        })}
-                    </ul>
+                    <>
+                        <ul className={`w-full flex flex-col items-start text-sm list-disc mb-1 ${responseIsError ? "text-red-600" : "text-green-600"}`}>
+                            {submitResponse.map((error, i) => {
+                                return <li key={i} className="mx-7">{error}</li>
+                            })}
+                            {!responseIsError &&
+                                //href={`/reset-password/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`}
+                                <li className="mx-7 text-black">
+                                    Click<Link className="mx-1 text-blue-600 underline sm:no-underline hover:underline" href={`/login${(sanitizedEmail !== null) ? ("?email=" + sanitizedEmail) : ""}`}>here</Link>to sign in.
+                                </li>
+                            }
+                        </ul>
+
+                    </>
                 )}
                 <button
                     type="submit"
@@ -183,7 +190,7 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
             </form>
         </div>
     ) : (
-        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b border-l border-r border-black text-black min-w-full sm:min-w-160">
+        <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160">
 
             <div className="flex flex-row justify-center text-2xl font-semibold mb-2">
                 Reset Password
