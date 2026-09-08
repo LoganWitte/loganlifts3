@@ -60,9 +60,15 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
     const [passwordHighlighted, setPasswordHighlighted] = useState(false);
     const [submitResponse, setSubmitResponse] = useState<string[]>([]);
     const [responseIsError, setResponseIsError] = useState(false);
+    const [formLoading, setFormLoading] = useState(false);
 
     // Handles form submission
     async function handleSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading(true);
+
 
         // Clears output fields
         setPasswordHighlighted(false);
@@ -75,6 +81,9 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         if (!passwordCheck.status) {
             setSubmitResponse(passwordCheck.errors);
             setResponseIsError(true);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading(false);
             return;
         }
 
@@ -93,12 +102,19 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         if (!result.ok) {
             setSubmitResponse([data.error ?? "Something went wrong. Try again later."]);
             setResponseIsError(true);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading(false);
             return;
         }
 
         // Sets success message
         setSubmitResponse(["Success! Password has been reset. Sign in to continue."]);
         setResponseIsError(false);
+        document.body.style.cursor = "default";
+        console.log("default")
+        setFormLoading(false);
+        return;
 
     }
 
@@ -136,6 +152,7 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
+                    if (formLoading) return;
                     handleSubmit();
                 }}
             >
@@ -181,8 +198,8 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
                 )}
                 <button
                     type="submit"
-                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-1 rounded-md border-2 
-                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-1 rounded-md border-2 border-black text-black 
+                        ${formLoading ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
                     <FaKey className="scale-160 ml-2 mr-4" />
                     Reset Password

@@ -18,9 +18,15 @@ const Page = () => {
     const [submitResponse, setSubmitResponse] = useState("");
     const [emailHighlighted, setEmailHighlighted] = useState(false);
     const [responseIsError, setResponseIsError] = useState(false);
+    const [formLoading, setFormLoading] = useState(false);
 
     // Handles form submission
     async function handleSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading(true);
+
         // Clears output fields
         setSubmitResponse("");
         setEmailHighlighted(false);
@@ -34,12 +40,18 @@ const Page = () => {
             setSubmitResponse("Missing email address.");
             setEmailHighlighted(true);
             setResponseIsError(true);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading(false);
             return;
         }
         else if (!emailValid) {
             setSubmitResponse("Invalid email address.");
             setEmailHighlighted(true);
             setResponseIsError(true);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading(false);
             return;
         }
 
@@ -58,10 +70,18 @@ const Page = () => {
             setSubmitResponse("Success! If an account exists with this email address, a link will be sent shortly.");
             setEmail("");
             setResponseIsError(false);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading(false);
+            return;
         }
         else {
             setSubmitResponse("Error: Server failed to respond. Confirm internet connection or try again later.");
             setResponseIsError(true);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading(false);
+            return;
         }
     }
 
@@ -87,6 +107,7 @@ const Page = () => {
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
+                    if (formLoading) return;
                     handleSubmit();
                 }}
             >
@@ -107,8 +128,8 @@ const Page = () => {
 
                 <button
                     type="submit"
-                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 ${submitResponse ? "mb-1" : "mb-3"} rounded-md border-2 
-                                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer`}
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 ${submitResponse ? "mb-1" : "mb-3"} rounded-md border-2 border-black  text-black  
+                        ${formLoading ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
                     <FaEnvelope className="scale-160 ml-2 mr-4" />
                     Send password reset link

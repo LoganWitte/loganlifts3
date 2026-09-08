@@ -36,9 +36,17 @@ const Page = () => {
     const [credentialsEmailHighlighted, setCredentialsEmailHighlighted] = useState(false);
     const [passwordHighlighted, setPasswordHighlighted] = useState(false);
     const [linkEmailHighlighted, setLinkEmailHighlighted] = useState(false);
+    const [formLoading1, setFormLoading1] = useState(false);
+    const [formLoading2, setFormLoading2] = useState(false);
+    const [formLoading3, setFormLoading3] = useState(false);
+    const [formLoading4, setFormLoading4] = useState(false);
 
     // Form submit handlers
     async function handleCredentialsSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading1(true);
 
         // Clears output fields
         setCredentialsErrors("");
@@ -76,6 +84,9 @@ const Page = () => {
         // Populates output with new errors if necessary
         if (credentialErrors !== "") {
             setCredentialsErrors(credentialErrors);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading1(false);
             return;
         }
 
@@ -95,8 +106,17 @@ const Page = () => {
                 setCredentialsErrors("Invalid email or password.");
             }
         }
+        document.body.style.cursor = "default";
+        console.log("default")
+        setFormLoading1(false);
+        return;
     }
     async function handleEmailLinkSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading2(true);
+
         // Clears output fields
         setLinkOutput("");
         setLinkOutputColor("black");
@@ -111,12 +131,18 @@ const Page = () => {
             setLinkOutput("Missing email.");
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading2(false);
             return;
         }
         else if (!emailValid) {
             setLinkOutput("Invalid email.");
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading2(false);
             return;
         }
 
@@ -130,6 +156,36 @@ const Page = () => {
             setLinkOutput(result.error);
             setLinkOutputColor("red");
         }
+        document.body.style.cursor = "default";
+        console.log("default")
+        setFormLoading2(false);
+        return;
+    }
+    async function handleGoogleSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading3(true);
+
+        await signIn('google');
+
+        document.body.style.cursor = "default";
+        console.log("default")
+        setFormLoading3(false);
+        return;
+    }
+    async function handleGithubSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading4(true);
+
+        await signIn('github');
+
+        document.body.style.cursor = "default";
+        console.log("default")
+        setFormLoading4(false);
+        return;
     }
 
     // Updates form inputs when user navigates back to this page and the input fields are pre-filled 
@@ -160,16 +216,22 @@ const Page = () => {
                 Sign in to LoganLifts
             </div>
 
-            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(64.75%_0.1603_148.5)] hover:bg-[oklch(58.75%_0.1603_148.5)] text-black
-                               hover:cursor-pointer"
-                onClick={() => signIn('google')}>
+            <button className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black text-black
+                                ${formLoading3 ? "bg-[oklch(58.75%_0.1603_148.5)] hover:cursor-wait" : "bg-[oklch(64.75%_0.1603_148.5)] hover:bg-[oklch(58.75%_0.1603_148.5)] hover:cursor-pointer"}`}
+                onClick={() => {
+                    if (formLoading3) return;
+                    handleGoogleSubmit();
+                }}>
                 <FaGoogle className="scale-160 ml-2 mr-4" />
                 Continue with Google
             </button>
 
-            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(0.5502_0.2585_295.66)] hover:bg-[oklch(0.5202_0.2585_295.66)] text-black
-                               hover:cursor-pointer"
-                onClick={() => signIn('github')}>
+            <button className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black  text-black 
+                                ${formLoading4 ? "bg-[oklch(0.5202_0.2585_295.66)] hover:cursor-wait" : "bg-[oklch(0.5502_0.2585_295.66)] hover:bg-[oklch(0.5202_0.2585_295.66)] hover:cursor-pointer"}`}
+                onClick={() => {
+                    if (formLoading4) return;
+                    handleGithubSubmit();
+                }}>
                 <FaGithub className="scale-160 ml-2 mr-4" />
                 Continue with GitHub
             </button>
@@ -184,6 +246,7 @@ const Page = () => {
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
+                    if (formLoading1) return;
                     handleCredentialsSubmit();
                 }}
             >
@@ -228,8 +291,8 @@ const Page = () => {
 
                 <button
                     type="submit"
-                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-1 rounded-md border-2 
-                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-1 rounded-md border-2 border-black text-black 
+                        ${formLoading1 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
                     <FaKey className="scale-160 ml-2 mr-4" />
                     Sign in with credentials
@@ -267,6 +330,7 @@ const Page = () => {
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
+                    if (formLoading1) return;
                     handleEmailLinkSubmit();
                 }}
             >
@@ -288,8 +352,8 @@ const Page = () => {
 
                 <button
                     type="submit"
-                    className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 
-                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer"
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 mb-1 rounded-md border-2 border-black text-black 
+                        ${formLoading2 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
                     <FaEnvelope className="scale-160 ml-2 mr-4" />
                     Sign in with email link

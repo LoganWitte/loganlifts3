@@ -33,9 +33,16 @@ const Page = () => {
     const [usernameHighlighted, setUsernameHighlighted] = useState(false);
     const [emailHighlighted, setEmailHighlighted] = useState(false);
     const [passwordHighlighted, setPasswordHighlighted] = useState(false);
+    const [formLoading1, setFormLoading1] = useState(false);
+    const [formLoading2, setFormLoading2] = useState(false);
+    const [formLoading3, setFormLoading3] = useState(false);
 
     // Form submit handlers
     async function handleRegisterSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading1(true);
 
         // Clears output fields
         setSignUpOutput([]);
@@ -68,6 +75,9 @@ const Page = () => {
 
         // Returns before hitting API if any inputs are invalid
         if (!usernameCheck.status || !emailCheck.status || !passwordCheck.status) {
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading1(false);
             return;
         }
 
@@ -87,6 +97,9 @@ const Page = () => {
         if (!result.ok) {
             setSignUpOutput([data.error ?? "Something went wrong. Try again later."]);
             setSignUpOutputColor("red");
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading1(false);
             return;
         }
         else {
@@ -95,7 +108,37 @@ const Page = () => {
             setUsername("");
             setEmail("");
             setPassword("");
+            document.body.style.cursor = "default";
+            console.log("default")
+            setFormLoading1(false);
+            return;
         }
+    }
+    async function handleGoogleSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading2(true);
+
+        await signIn('google');
+
+        document.body.style.cursor = "default";
+        console.log("default")
+        setFormLoading2(false);
+        return;
+    }
+    async function handleGithubSubmit() {
+
+        document.body.style.cursor = "wait";
+        console.log("wait")
+        setFormLoading3(true);
+
+        await signIn('github');
+
+        document.body.style.cursor = "default";
+        console.log("default")
+        setFormLoading3(false);
+        return;
     }
 
     // Updates state variables when user navigates back to this page and the input fields are pre-filled 
@@ -126,16 +169,22 @@ const Page = () => {
                 Sign up for LoganLifts
             </div>
 
-            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(64.75%_0.1603_148.5)] hover:bg-[oklch(58.75%_0.1603_148.5)] text-black
-                               hover:cursor-pointer"
-                onClick={() => signIn('google')}>
+            <button className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black text-black
+                                ${formLoading2 ? "bg-[oklch(58.75%_0.1603_148.5)] hover:cursor-wait" : "bg-[oklch(64.75%_0.1603_148.5)] hover:bg-[oklch(58.75%_0.1603_148.5)] hover:cursor-pointer"}`}
+                onClick={() => {
+                    if (formLoading2) return;
+                    handleGoogleSubmit();
+                }}>
                 <FaGoogle className="scale-160 ml-2 mr-4" />
                 Continue with Google
             </button>
 
-            <button className="flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black bg-[oklch(0.5502_0.2585_295.66)] hover:bg-[oklch(0.5202_0.2585_295.66)] text-black
-                               hover:cursor-pointer"
-                onClick={() => signIn('github')}>
+            <button className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 my-2 rounded-md border-2 border-black  text-black 
+                                ${formLoading3 ? "bg-[oklch(0.5202_0.2585_295.66)] hover:cursor-wait" : "bg-[oklch(0.5502_0.2585_295.66)] hover:bg-[oklch(0.5202_0.2585_295.66)] hover:cursor-pointer"}`}
+                onClick={() => {
+                    if (formLoading3) return;
+                    handleGithubSubmit();
+                }}>
                 <FaGithub className="scale-160 ml-2 mr-4" />
                 Continue with GitHub
             </button>
@@ -150,6 +199,7 @@ const Page = () => {
                 className="flex flex-col"
                 onSubmit={(e) => {
                     e.preventDefault();
+                    if (formLoading1) return;
                     handleRegisterSubmit();
                 }}
             >
@@ -249,8 +299,8 @@ const Page = () => {
 
                 <button
                     type="submit"
-                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 ${signUpOutput.length > 0 ? "mb-1" : "mb-3"} rounded-md border-2 
-                    border-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] text-black hover:cursor-pointer`}
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 ${signUpOutput.length > 0 ? "mb-1" : "mb-3"} rounded-md border-2 border-black  text-black 
+                        ${formLoading1 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
                     <FaUser className="scale-160 ml-2 mr-4" />
                     Create account
