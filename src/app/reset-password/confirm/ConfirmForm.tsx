@@ -8,20 +8,23 @@ import Link from 'next/link'
 import { MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_EMAIL_LENGTH, MAX_EMAIL_LENGTH } from "@/lib/constants";
 import { checkUsername, checkEmail } from "@/lib/credentialChecks";
 
-const Page = () => {
+interface ConfirmFormProps {
+    resetToken: string | undefined;
+}
+
+const Page = ({ resetToken: resetToken }: ConfirmFormProps) => {
+
+    const searchParams = useSearchParams();
 
     // Pulls data from searchParams
-    const searchParams = useSearchParams();
     const name: string | null = searchParams.get('name');
     const email = searchParams.get('email');
-    const token = searchParams.get('token');
 
-    // Marks validity of data from searchParams
-    // Note that page will work normally unless 'tokenPresent' is false
+    // Sanitizes data from searchParams, sets to null if invalid
+    // Note that page will work normally unless 'sanitizedToken' is null
     // Otherwise, missing data will simply not be displayed
     const sanitizedName = (name !== null && name.length >= MIN_USERNAME_LENGTH && name.length <= MAX_USERNAME_LENGTH && checkUsername(name).status) ? name : null;
     const sanitizedEmail = (email !== null && email.length >= MIN_EMAIL_LENGTH && email.length <= MAX_EMAIL_LENGTH && checkEmail(email).status) ? email : null;
-    const sanitizedToken = (token !== null && token.length >= 0) ? token : null;
 
     // Form inputs
     const [password, setPassword] = useState('');
@@ -54,7 +57,7 @@ const Page = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                token: token,
+                token: resetToken,
                 newPassword: password,
             }),
         })
@@ -82,7 +85,7 @@ const Page = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return sanitizedToken !== null ? (
+    return resetToken !== undefined ? (
         <div className="flex flex-col p-4 sm:m-4 bg-slate-200 sm:border-t border-b border-l border-r border-black text-black min-w-full sm:min-w-160">
 
             <div className="flex flex-row justify-center text-2xl font-semibold mb-2">
