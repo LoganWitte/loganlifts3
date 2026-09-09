@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useCallback, useEffect } from 'react';
 import { FaGithub, FaGoogle, FaEye, FaEyeSlash, FaUser } from 'react-icons/fa'
 import { checkUsername, checkEmail, checkPassword } from '@/lib/credentialChecks'
+import Link from 'next/link'
 
 const Page = () => {
 
@@ -299,7 +300,7 @@ const Page = () => {
 
                 <button
                     type="submit"
-                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 ${signUpOutput.length > 0 ? "mb-1" : "mb-3"} rounded-md border-2 border-black  text-black 
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black  text-black 
                         ${formLoading1 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
                     <FaUser className="scale-160 ml-2 mr-4" />
@@ -307,12 +308,24 @@ const Page = () => {
                 </button>
 
                 {signUpOutput.length > 0 && (
-                    <ul className={`w-full flex flex-col items-start text-sm list-disc mb-3 ${signUpOutputColor === "red" ? "text-red-600" : signUpOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${signUpOutputColor === "red" ? "text-red-600" : signUpOutputColor === "green" ? "text-green-600" : "text-black"}`}>
                         {signUpOutput.map((error, i) => {
                             return <li key={i} className="mx-7">{error}</li>
                         })}
                     </ul>
                 )}
+
+                <div className="flex flex-row items-center justify-evenly mt-2">
+                    <div className="grow border-t border-black" />
+                    <div className="w-fit mx-3 text-center">or</div>
+                    <div className="grow border-t border-black" />
+                </div>
+
+                <Link
+                    href="/login"
+                    className="flex flex-row text-blue-600 underline sm:no-underline hover:underline justify-center mb-3">Already have an account?
+                </Link>
+
             </form>
         </div>
     );

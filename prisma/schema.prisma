@@ -39,7 +39,7 @@ datasource db {
 // The 'sessions' field is an array of Session objects, which store the user's active sessions (if using the "database" session strategy).
 model User {
   id                          String    @id @default(cuid())
-  name                        String?
+  name                        String?   @unique
   // User's email address, inherited from OAuth provider or entered manually for 'credentials' users. Must be unique across all users.
   email                       String?   @unique
   // Whether the user's email address has been verified. For OAuth users, this value is inherited from the provider (Google or GitHub). 

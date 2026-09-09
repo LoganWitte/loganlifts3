@@ -56,6 +56,18 @@ export async function POST(req: Request) {
         )
     }
 
+    const existingName = await prisma.user.findUnique({
+        where: { name },
+        include: { accounts: true },
+    })
+
+    if (existingName) {
+        return NextResponse.json(
+            { error: 'An account with this name already exists. Please use another name instead.' },
+            { status: 409 }
+        )
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12)
 
     const user = await prisma.user.create({

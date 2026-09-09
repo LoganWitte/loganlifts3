@@ -311,7 +311,7 @@ const Page = () => {
 
             </form>
 
-            <div className="flex flex-row justify-center mx-4 text-sm">
+            <div className="flex flex-row justify-center mx-4">
                 <Link
                     href={`/reset-password/request${credentialsEmail ? "?email=" + credentialsEmail : linkEmail ? "?email=" + linkEmail : ""}`}
                     className="text-blue-600 underline sm:no-underline hover:underline">Forgot password?</Link>
@@ -349,7 +349,7 @@ const Page = () => {
 
                 <button
                     type="submit"
-                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 mb-1 rounded-md border-2 border-black text-black 
+                    className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black text-black 
                         ${formLoading2 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
                     <FaEnvelope className="scale-160 ml-2 mr-4" />
@@ -358,12 +358,23 @@ const Page = () => {
 
                 {linkOutput !== "" && (
                     <div className={
-                        `flex flex-col items-center justify-center text-sm mt-1 mb-3
+                        `flex flex-col items-center justify-center text-sm mt-1 
                         ${linkOutputColor === "red" ? "text-red-600" : linkOutputColor === "green" ? "text-green-500" : "text-black"}`
                     }>
                         {linkOutput}
                     </div>
                 )}
+
+                <div className="flex flex-row items-center justify-evenly mt-2">
+                    <div className="grow border-t border-black" />
+                    <div className="w-fit mx-3 text-center">or</div>
+                    <div className="grow border-t border-black" />
+                </div>
+
+                <Link
+                    href="/signup"
+                    className="flex flex-row text-blue-600 underline sm:no-underline hover:underline justify-center mb-3">Need to create an account?
+                </Link>
 
             </form>
         </div>
