@@ -4,6 +4,8 @@
 // Each function will accept the credential as a string and return an object containing a boolean
 // indicating whether the credential is valid and an array of messages detailing any validation errors.
 
+import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
+
 import {
     MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_EMAIL_LENGTH, MAX_EMAIL_LENGTH,
     MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH
@@ -43,6 +45,16 @@ export const checkUsername = (username: string): CheckResponse => {
     }
     if (/--/.test(username)) {
         errors.push("Username must not contain consecutive hyphens.");
+    }
+
+    // Tests name for profanity using 'obscenity' package
+    const matcher = new RegExpMatcher({
+        ...englishDataset.build(),
+        ...englishRecommendedTransformers,
+    });
+    const matches = matcher.hasMatch(username);
+    if (matches) {
+        errors.push("Username must not contain profanity.");
     }
 
     const response: CheckResponse = {
