@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         )
     }
 
-    const existingName = await prisma.user.findUnique({
+    const existingName = await prisma.user.findFirst({
         where: { name },
         include: { accounts: true },
     })
