@@ -1,4 +1,3 @@
-// src/app/api/account/password/route.ts
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
@@ -6,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { checkPassword, CheckResponse } from '@/lib/credentialChecks'
 
 export async function POST(req: Request) {
+
     const session = await auth()
     if (!session?.user?.email) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -27,14 +27,14 @@ export async function POST(req: Request) {
     })
 
     if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+        return NextResponse.json({ error: 'User not found.' }, { status: 404 })
     }
 
     if (user.password) {
         // Changing an existing password — require current password
         if (!currentPassword) {
             return NextResponse.json(
-                { error: 'Current password required' },
+                { error: 'Current password required.' },
                 { status: 400 }
             )
         }
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         const isValid = await bcrypt.compare(currentPassword, user.password)
         if (!isValid) {
             return NextResponse.json(
-                { error: 'Current password is incorrect' },
+                { error: 'Current password is incorrect.' },
                 { status: 401 }
             )
         }

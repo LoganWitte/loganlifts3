@@ -46,14 +46,14 @@ export async function POST(req: Request) {
     const foundName = user.name !== null && user.name.length > 0;
     let resetUrl: string;
     if (foundName) {
-        resetUrl = `${process.env.APP_URL}/reset-password/confirm?name=${user.name}&email=${user.email}&token=${token}`;
+        resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/confirm?name=${user.name}&email=${user.email}&token=${token}`;
     }
     else {
-        resetUrl = `${process.env.APP_URL}/reset-password/confirm?email=${user.email}&token=${token}`;
+        resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/confirm?email=${user.email}&token=${token}`;
     }
 
     await resend.emails.send({
-        from: process.env.EMAIL_FROM!,
+        from: process.env.NEXT_PUBLIC_EMAIL_FROM!,
         to: email,
         subject: 'LoganLifts - Reset your password',
         html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. This link expires in 30 minutes.</p>`,

@@ -86,9 +86,9 @@ export async function POST(req: Request) {
     })
 
     // Sends verification email
-    const verifyUrl = `${process.env.APP_URL}/verify-email/confirm?token=${token}`
+    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email/confirm?token=${token}`
     await resend.emails.send({
-        from: process.env.EMAIL_FROM!,
+        from: process.env.NEXT_PUBLIC_EMAIL_FROM!,
         to: email,
         subject: 'LoganLifts - Verify your email',
         html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email. This link expires in 24 hours.</p>`,

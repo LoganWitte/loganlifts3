@@ -3,7 +3,9 @@ import { DefaultSession } from 'next-auth'
 declare module 'next-auth' {
   interface Session {
     provider?: string
-    user: DefaultSession['user']
+    user: {
+      hasPassword?: boolean
+    } & DefaultSession['user']
   }
 }
 

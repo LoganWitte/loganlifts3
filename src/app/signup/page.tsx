@@ -53,7 +53,7 @@ const Page = () => {
         setEmailHighlighted(false);
         setEmailErrors([]);
         setPasswordHighlighted(false);
-        setEmailErrors([]);
+        setPasswordErrors([]);
 
         // Checks validity of input fields
         const usernameCheck = checkUsername(username);
@@ -99,7 +99,6 @@ const Page = () => {
             setSignUpOutput([data.error ?? "Something went wrong. Try again later."]);
             setSignUpOutputColor("red");
             document.body.style.cursor = "default";
-
             setFormLoading1(false);
             return;
         }
@@ -110,7 +109,6 @@ const Page = () => {
             setEmail("");
             setPassword("");
             document.body.style.cursor = "default";
-
             setFormLoading1(false);
             return;
         }

@@ -17,7 +17,7 @@ const Navbar = () => {
                 <Link className="text-4xl text-black select-none" href="/">LoganLifts™</Link>
 
                 {/* Desktop Navigation - Hidden on mobile */}
-                <div className="hidden md:flex flex-1 items-center justify-end gap-4 text-white text-center">
+                <div className="hidden sm:flex flex-1 items-center justify-end gap-4 text-white text-center">
                     <Link
                         className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] select-none"
                         href="/calculator">
@@ -74,7 +74,7 @@ const Navbar = () => {
 
                 {/* Mobile Hamburger Button */}
                 <button
-                    className="md:hidden flex flex-col p-3 border rounded-lg hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+                    className="sm:hidden flex flex-col p-3 border rounded-lg hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
                     onClick={() => setMenuOpen(!menuOpen)}
                     aria-label="Toggle menu"
                 >
@@ -84,7 +84,7 @@ const Navbar = () => {
 
             {/* Mobile Menu */}
             {menuOpen && (
-                <div className="md:hidden flex flex-col gap-2 p-4 bg-orange-500 border-t border-black">
+                <div className="sm:hidden flex flex-col gap-2 p-4 bg-orange-500 border-t border-black">
                     <Link className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] text-white select-none" href="/calculator">Lift Calculator</Link>
                     <Link className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] text-white select-none" href="/exercises">Exercises</Link>
                     {

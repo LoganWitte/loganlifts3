@@ -184,7 +184,8 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
                         })}
                         {!responseIsError &&
                             <li className="mx-7 text-black">
-                                Click<Link className="mx-1 text-blue-600 underline sm:no-underline hover:underline" href={`/login${(sanitizedEmail !== null) ? ("?email=" + sanitizedEmail) : ""}`}>here</Link>to sign in.
+                                Click<Link className="mx-1 text-blue-600 underline sm:no-underline hover:underline"
+                                    href={`/login${sanitizedEmail ? "?email=" + sanitizedEmail : ""}`}>here</Link>to sign in.
                             </li>
                         }
                     </ul>

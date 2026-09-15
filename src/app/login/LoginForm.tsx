@@ -279,6 +279,7 @@ const Page = () => {
                     />
                     <button
                         type="button"
+                        title="Toggle password visibility"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 hover:cursor-pointer rounded-full p-1 scale-125 hover:bg-stone-400 opacity-75"
                         onClick={() => setPasswordVisible(!passwordVisible)}
                     >

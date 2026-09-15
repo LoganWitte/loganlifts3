@@ -28,7 +28,6 @@ const Page = () => {
     useEffect(() => {
         // Handles form submission
         async function submit() {
-            console.log('Token:', token);
 
             // Clears submit response
             setSubmitResponse([]);

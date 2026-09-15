@@ -40,15 +40,15 @@ export async function POST(req: Request) {
     const foundName = user.name !== null && user.name.length > 0;
     let verifyUrl: string;
     if (foundName) {
-        verifyUrl = `${process.env.APP_URL}/verify-email/confirm?name=${user.name}&email=${user.email}&token=${token}`;
+        verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email/confirm?name=${user.name}&email=${user.email}&token=${token}`;
     }
     else {
-        verifyUrl = `${process.env.APP_URL}/verify-email/confirm?email=${user.email}&token=${token}`;
+        verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email/confirm?email=${user.email}&token=${token}`;
     }
 
     // Sends verification email
     await resend.emails.send({
-        from: process.env.EMAIL_FROM!,
+        from: process.env.NEXT_PUBLIC_EMAIL_FROM!,
         to: email,
         subject: 'LoganLifts - Verify your email',
         html: `<p>Click <a href="${verifyUrl}">here</a> to verify your email. This link expires in 30 minutes.</p>`,
