@@ -22,22 +22,22 @@ const Page = () => {
 
     const currentUsername: string = useMemo(() =>
         data?.user?.name || "user",
-        [data, status]
+        [data]
     );
 
     const email: string = useMemo(() =>
         data?.user?.email || "email@address.com",
-        [data, status]
+        [data]
     );
 
     const imageURL: string | undefined = useMemo(() =>
         data?.user?.image || undefined,
-        [data, status]
+        [data]
     );
 
     const userHasPassword: boolean = useMemo(() =>
         data?.user?.hasPassword ?? false,
-        [data, status]
+        [data]
     );
 
     // Form inputs
@@ -114,6 +114,7 @@ const Page = () => {
             document.body.style.cursor = "default";
             setImageLoading(false);
             await update();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             setImageError('Failed to upload image. Please try again.');
             setTimeout(() => setImageError(''), 5000);
@@ -156,6 +157,7 @@ const Page = () => {
             document.body.style.cursor = "default";
             setImageLoading(false);
             await update();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             setImageError('Failed to delete image. Please try again.');
             setTimeout(() => setImageError(''), 5000);
