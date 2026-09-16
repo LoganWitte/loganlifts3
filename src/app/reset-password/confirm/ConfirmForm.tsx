@@ -81,6 +81,10 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         if (!passwordCheck.status) {
             setSubmitResponse(passwordCheck.errors);
             setResponseIsError(true);
+            setTimeout(() => {
+                setSubmitResponse([]);
+                setPasswordHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
 
             setFormLoading(false);
@@ -100,8 +104,13 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         // Populates 'submitResponse' with either server error or success message
         const data = await result.json();
         if (!result.ok) {
-            setSubmitResponse([data.error ?? "Something went wrong. Try again later."]);
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setSubmitResponse([errorMsg]);
             setResponseIsError(true);
+            setTimeout(() => {
+                setSubmitResponse([]);
+                setPasswordHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
             setFormLoading(false);
             return;
@@ -110,6 +119,10 @@ const Page = ({ tokenFromLocalStorage: tokenFromLocalStorage }: ConfirmFormProps
         // Sets success message
         setSubmitResponse(["Success! Password has been reset. Sign in to continue."]);
         setResponseIsError(false);
+        setTimeout(() => {
+            setSubmitResponse([]);
+            setPasswordHighlighted(false);
+        }, 3000);
         document.body.style.cursor = "default";
         setFormLoading(false);
         return;

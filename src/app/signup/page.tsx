@@ -76,6 +76,14 @@ const Page = () => {
 
         // Returns before hitting API if any inputs are invalid
         if (!usernameCheck.status || !emailCheck.status || !passwordCheck.status) {
+            setTimeout(() => {
+                setUsernameErrors([]);
+                setUsernameHighlighted(false);
+                setEmailErrors([]);
+                setEmailHighlighted(false);
+                setPasswordErrors([]);
+                setPasswordHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
 
             setFormLoading1(false);
@@ -96,8 +104,15 @@ const Page = () => {
         // Displays error / success from above endpoint
         const data = await result.json();
         if (!result.ok) {
-            setSignUpOutput([data.error ?? "Something went wrong. Try again later."]);
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setSignUpOutput([errorMsg]);
             setSignUpOutputColor("red");
+            setTimeout(() => {
+                setSignUpOutput([]);
+                setUsernameHighlighted(false);
+                setEmailHighlighted(false);
+                setPasswordHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
             setFormLoading1(false);
             return;
@@ -105,6 +120,12 @@ const Page = () => {
         else {
             setSignUpOutput(["Account created — check your email to verify before signing in."]);
             setSignUpOutputColor("green");
+            setTimeout(() => {
+                setSignUpOutput([]);
+                setUsernameHighlighted(false);
+                setEmailHighlighted(false);
+                setPasswordHighlighted(false);
+            }, 3000);
             setUsername("");
             setEmail("");
             setPassword("");

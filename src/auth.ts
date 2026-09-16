@@ -5,12 +5,64 @@ import Credentials from 'next-auth/providers/credentials'
 import Resend from 'next-auth/providers/resend'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
+import { v2 as cloudinary } from 'cloudinary'
 import bcrypt from 'bcryptjs'
 import { sendVerificationRequestCustom } from './lib/sendMagicLink'
 import { checkUsername } from './lib/credentialChecks'
 
+cloudinary.config({
+    cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
 class EmailNotVerifiedError extends CredentialsSignin {
     code = 'email_not_verified'
+}
+
+function isOAuthImageUrl(url: string): boolean {
+    if (!url) return false;
+    return url.includes('googleusercontent.com') || url.includes('githubusercontent.com');
+}
+
+async function validateAndUploadOAuthImage(imageUrl: string, userId: string): Promise<string | null> {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) return null;
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.startsWith('image/')) return null;
+
+        const contentLength = response.headers.get('content-length');
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        if (contentLength && parseInt(contentLength) > MAX_FILE_SIZE) return null;
+
+        const buffer = await response.arrayBuffer();
+
+        const uploadResult = await new Promise<{ secure_url: string } | null>((resolve) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'loganlifts/profile-photos',
+                    public_id: `user-${userId}`,
+                    overwrite: true,
+                    resource_type: 'auto',
+                    quality: 'auto:best',
+                    fetch_format: 'auto',
+                    format: 'webp',
+                },
+                (error, result) => {
+                    if (error) resolve(null);
+                    else resolve(result as { secure_url: string });
+                }
+            );
+            stream.end(Buffer.from(buffer));
+        });
+
+        return uploadResult?.secure_url ?? null;
+    } catch {
+        // If image upload fails, continue with user creation
+        return null;
+    }
 }
 
 async function checkUniqueNameIdExcluded(name: string, id: string): Promise<boolean> {
@@ -142,43 +194,40 @@ const config = {
         async createUser({ user }) {
             const existingUser = await prisma.user.findUnique({
                 where: { email: user.email! },
-                select: { id: true, name: true },
+                select: { id: true, name: true, image: true },
             });
 
             if (existingUser) {
+                const updateData: { name?: string | null; image?: string; emailVerified: Date } = {
+                    emailVerified: new Date(),
+                };
+
+                // Handle name sanitization
                 if (existingUser.name) {
                     const nameValid = checkUsername(existingUser.name).status;
                     const nameUnique = await checkUniqueNameIdExcluded(existingUser.name, existingUser.id);
 
                     if (!nameValid) {
-                        await prisma.user.update({
-                            where: { id: existingUser.id },
-                            data: { name: null, emailVerified: new Date() },
-                        });
-                    }
-
-                    else if (!nameUnique) {
+                        updateData.name = null;
+                    } else if (!nameUnique) {
                         const uniqueName = await getUniqueName(existingUser.name);
-                        await prisma.user.update({
-                            where: { id: existingUser.id },
-                            data: { name: uniqueName, emailVerified: new Date() },
-                        });
-                    }
-
-                    else {
-                        await prisma.user.update({
-                            where: { id: existingUser.id },
-                            data: { emailVerified: new Date() },
-                        });
+                        updateData.name = uniqueName;
                     }
                 }
 
-                else {
-                    await prisma.user.update({
-                        where: { id: existingUser.id },
-                        data: { emailVerified: new Date() },
-                    });
+                // Handle OAuth image upload
+                if (existingUser.image && isOAuthImageUrl(existingUser.image)) {
+                    const cloudinaryUrl = await validateAndUploadOAuthImage(existingUser.image, existingUser.id);
+                    if (cloudinaryUrl) {
+                        updateData.image = cloudinaryUrl;
+                    }
                 }
+
+                // Single update call with both name and image changes
+                await prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: updateData,
+                });
             }
         },
     },

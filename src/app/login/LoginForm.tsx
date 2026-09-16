@@ -84,6 +84,11 @@ const Page = () => {
         // Populates output with new errors if necessary
         if (credentialErrors !== "") {
             setCredentialsErrors(credentialErrors);
+            setTimeout(() => {
+                setCredentialsErrors("");
+                setCredentialsEmailHighlighted(false);
+                setPasswordHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
 
             setFormLoading1(false);
@@ -105,6 +110,11 @@ const Page = () => {
             else {
                 setCredentialsErrors("Invalid email or password.");
             }
+            setTimeout(() => {
+                setCredentialsErrors("");
+                setCredentialsEmailHighlighted(false);
+                setPasswordHighlighted(false);
+            }, 5000);
         }
         document.body.style.cursor = "default";
 
@@ -131,6 +141,10 @@ const Page = () => {
             setLinkOutput("Missing email.");
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
+            setTimeout(() => {
+                setLinkOutput("");
+                setLinkEmailHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
 
             setFormLoading2(false);
@@ -140,6 +154,10 @@ const Page = () => {
             setLinkOutput("Invalid email.");
             setLinkOutputColor("red");
             setLinkEmailHighlighted(true);
+            setTimeout(() => {
+                setLinkOutput("");
+                setLinkEmailHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
 
             setFormLoading2(false);
@@ -151,10 +169,18 @@ const Page = () => {
         if (result.success) {
             setLinkOutput("Success: check your email for the sign-in link.");
             setLinkOutputColor("green");
+            setTimeout(() => {
+                setLinkOutput("");
+                setLinkEmailHighlighted(false);
+            }, 3000);
         }
         else {
             setLinkOutput(result.error);
             setLinkOutputColor("red");
+            setTimeout(() => {
+                setLinkOutput("");
+                setLinkEmailHighlighted(false);
+            }, 5000);
         }
         document.body.style.cursor = "default";
 

@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        // Allows profile images from Cloudinary provider
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
         // Allows profile images from Google OAuth provider
         hostname: "*.googleusercontent.com",
       },

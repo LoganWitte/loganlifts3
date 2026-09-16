@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState } from "react"
-import ResetPasswordForm from "./ConfirmForm"
+import ConfirmForm from "./ConfirmForm"
 import ConfirmLoading from "./ConfirmLoading"
 
 const Page = () => {
@@ -22,7 +22,7 @@ const Page = () => {
 
     return (
         <Suspense fallback={<ConfirmLoading />}>
-            {resetToken === null ? <ConfirmLoading /> : <ResetPasswordForm tokenFromLocalStorage={resetToken} />}
+            {resetToken === null ? <ConfirmLoading /> : <ConfirmForm tokenFromLocalStorage={resetToken} />}
         </Suspense>
     );
 }

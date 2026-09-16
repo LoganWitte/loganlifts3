@@ -40,6 +40,10 @@ const Page = () => {
             setSubmitResponse("Missing email address.");
             setEmailHighlighted(true);
             setResponseIsError(true);
+            setTimeout(() => {
+                setSubmitResponse("");
+                setEmailHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
 
             setFormLoading(false);
@@ -49,6 +53,10 @@ const Page = () => {
             setSubmitResponse("Invalid email address.");
             setEmailHighlighted(true);
             setResponseIsError(true);
+            setTimeout(() => {
+                setSubmitResponse("");
+                setEmailHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
 
             setFormLoading(false);
@@ -70,11 +78,19 @@ const Page = () => {
             setSubmitResponse("Success! If an account exists with this email address, a link will be sent shortly.");
             setEmail("");
             setResponseIsError(false);
+            setTimeout(() => {
+                setSubmitResponse("");
+                setEmailHighlighted(false);
+            }, 3000);
         }
         else {
             const data = await result.json();
             setSubmitResponse("Error: " + (data.error ?? "Server failed to respond. Confirm internet connection or try again later."));
             setResponseIsError(true);
+            setTimeout(() => {
+                setSubmitResponse("");
+                setEmailHighlighted(false);
+            }, 5000);
         }
 
         // Loading finish

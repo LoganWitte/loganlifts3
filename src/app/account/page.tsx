@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation'
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from 'next/image';
 import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey } from 'react-icons/fa6'
 import { checkPassword, checkUsername } from "@/lib/credentialChecks";
@@ -20,37 +20,25 @@ const Page = () => {
         }
     }, [router, status]);
 
-    // Extracts & sanitizes user data: name, email, image
-    const currentUsername: string = useMemo(() => {
-        if (status === "loading") return "user";
-        if (status === "unauthenticated") return "user";
-        if (!data || !data.user || !data.user.name) return "user";
-        if (data.user.name.length <= 0) return "user";
-        return data.user.name;
-    }, [data, status]);
+    const currentUsername: string = useMemo(() =>
+        data?.user?.name || "user",
+        [data, status]
+    );
 
-    const email: string = useMemo(() => {
-        if (status === "loading") return "email@address.com";
-        if (status === "unauthenticated") return "email@address.com";
-        if (!data || !data.user || !data.user.email) return "email@address.com";
-        if (data.user.email.length <= 0) return "email@address.com";
-        return data.user.email;
-    }, [data, status]);
+    const email: string = useMemo(() =>
+        data?.user?.email || "email@address.com",
+        [data, status]
+    );
 
-    const imageURL: string | undefined = useMemo(() => {
-        if (status === "loading") return undefined;
-        if (status === "unauthenticated") return undefined;
-        if (!data || !data.user || !data.user.image) return undefined;
-        if (data.user.image.length <= 0) return undefined;
-        return data.user.image;
-    }, [data, status]);
+    const imageURL: string | undefined = useMemo(() =>
+        data?.user?.image || undefined,
+        [data, status]
+    );
 
-    const userHasPassword: boolean = useMemo(() => {
-        if (status === "loading") return false;
-        if (status === "unauthenticated") return false;
-        if (!data || !data.user || !data.user.hasPassword) return false;
-        return data.user.hasPassword;
-    }, [data, status])
+    const userHasPassword: boolean = useMemo(() =>
+        data?.user?.hasPassword ?? false,
+        [data, status]
+    );
 
     // Form inputs
     const [newUsername, setNewUsername] = useState('');
@@ -73,16 +61,107 @@ const Page = () => {
     const [formLoading2, setFormLoading2] = useState(false);
     const [updatePasswordOutput, setUpdatePasswordOutput] = useState<string[]>([]);
     const [updatePasswordOutputColor, setUpdatePasswordOutputColor] = useState<"black" | "red" | "green">("black");
-    const [passwordIncorrectResponse, setPasswordIncorrectResponse] = useState(false);
+
+    // Image upload state
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [imageLoading, setImageLoading] = useState(false);
+    const [imageError, setImageError] = useState<string>('');
+    const [imageSuccess, setImageSuccess] = useState<string>('');
 
     function handleEditImage() {
-        // TODO - implement profile image editing
+        fileInputRef.current?.click();
+    }
+
+    async function handleImageFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE) {
+            setImageError('File size must be less than 5MB.');
+            setTimeout(() => setImageError(''), 5000);
+            return;
+        }
+
+        document.body.style.cursor = "wait";
+        setImageLoading(true);
+        setImageError('');
+        setImageSuccess('');
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('/api/account/profile-photo', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errorMsg = data.error ?? 'Failed to upload image.';
+                setImageError(errorMsg);
+                setTimeout(() => setImageError(''), 5000);
+                document.body.style.cursor = "default";
+                setImageLoading(false);
+                return;
+            }
+
+            setImageSuccess('Profile photo updated successfully.');
+            setTimeout(() => setImageSuccess(''), 3000);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            document.body.style.cursor = "default";
+            setImageLoading(false);
+            await update();
+        } catch (error) {
+            setImageError('Failed to upload image. Please try again.');
+            setTimeout(() => setImageError(''), 5000);
+            document.body.style.cursor = "default";
+            setImageLoading(false);
+        }
     }
 
     function handleRemoveImage() {
-        const result = window.confirm("Are you sure you would like to remove your existing profile photo? This action is permanent.");
-        // TODO - implement profile image deletion
-        console.log(result ? "Deleting profile image" : "Preserving profile image");
+        const confirmed = window.confirm("Are you sure you would like to remove your existing profile photo? This action is permanent.");
+        if (!confirmed) return;
+
+        deleteProfileImage();
+    }
+
+    async function deleteProfileImage() {
+        document.body.style.cursor = "wait";
+        setImageLoading(true);
+        setImageError('');
+        setImageSuccess('');
+
+        try {
+            const response = await fetch('/api/account/profile-photo', {
+                method: 'DELETE',
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errorMsg = data.error ?? 'Failed to delete image.';
+                setImageError(errorMsg);
+                setTimeout(() => setImageError(''), 5000);
+                document.body.style.cursor = "default";
+                setImageLoading(false);
+                return;
+            }
+
+            setImageSuccess('Profile photo removed successfully.');
+            setTimeout(() => setImageSuccess(''), 3000);
+            document.body.style.cursor = "default";
+            setImageLoading(false);
+            await update();
+        } catch (error) {
+            setImageError('Failed to delete image. Please try again.');
+            setTimeout(() => setImageError(''), 5000);
+            document.body.style.cursor = "default";
+            setImageLoading(false);
+        }
     }
 
     // Form submit handlers
@@ -104,6 +183,10 @@ const Page = () => {
         if (!usernameCheck.status) {
             setUsernameErrors(usernameCheck.errors);
             setUsernameHighlighted(true);
+            setTimeout(() => {
+                setUsernameErrors([]);
+                setUsernameHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
             setFormLoading1(false);
             return;
@@ -121,8 +204,14 @@ const Page = () => {
         // Displays error / success from above endpoint
         const data = await result.json();
         if (!result.ok) {
-            setUpdateNameOutput([data.error ?? "Something went wrong. Try again later."]);
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setUpdateNameOutput([errorMsg]);
             setUpdateNameOutputColor("red");
+            setTimeout(() => {
+                setUpdateNameOutput([]);
+                setUsernameHighlighted(false);
+                setUsernameErrors([]);
+            }, 5000);
             document.body.style.cursor = "default";
             setFormLoading1(false);
             return;
@@ -130,10 +219,15 @@ const Page = () => {
         else {
             setUpdateNameOutput(["Username successfully updated."]);
             setUpdateNameOutputColor("green");
+            setTimeout(() => {
+                setUpdateNameOutput([]);
+                setUsernameHighlighted(false);
+                setUsernameErrors([]);
+            }, 3000);
             setNewUsername("");
             document.body.style.cursor = "default";
             setFormLoading1(false);
-            await update(); // Updates { data, status } ('useSession')
+            await update();
             return;
         }
 
@@ -151,7 +245,6 @@ const Page = () => {
         setNewPasswordHighlighted(false);
         setOldPasswordErrors([]);
         setNewPasswordErrors([]);
-        setPasswordIncorrectResponse(false);
 
         // Checks validity of input fields
         const oldPasswordPresent = userHasPassword ? oldPassword.length > 0 : false;
@@ -169,6 +262,12 @@ const Page = () => {
 
         // Returns before hitting API if any inputs are invalid
         if ((userHasPassword && !oldPasswordPresent) || !newPasswordCheck.status) {
+            setTimeout(() => {
+                setOldPasswordErrors([]);
+                setOldPasswordHighlighted(false);
+                setNewPasswordErrors([]);
+                setNewPasswordHighlighted(false);
+            }, 5000);
             document.body.style.cursor = "default";
             setFormLoading2(false);
             return;
@@ -187,11 +286,16 @@ const Page = () => {
         // Displays error / success from above endpoint
         const data = await result.json();
         if (!result.ok) {
-            if (data.error === "Current password is incorrect.") {
-                setPasswordIncorrectResponse(true);
-            }
-            setUpdatePasswordOutput([data.error ?? "Something went wrong. Try again later."]);
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setUpdatePasswordOutput([errorMsg]);
             setUpdatePasswordOutputColor("red");
+            setTimeout(() => {
+                setUpdatePasswordOutput([]);
+                setOldPasswordHighlighted(false);
+                setNewPasswordHighlighted(false);
+                setOldPasswordErrors([]);
+                setNewPasswordErrors([]);
+            }, 5000);
             document.body.style.cursor = "default";
             setFormLoading2(false);
             return;
@@ -199,11 +303,18 @@ const Page = () => {
         else {
             setUpdatePasswordOutput(["Password successfully updated."]);
             setUpdatePasswordOutputColor("green");
+            setTimeout(() => {
+                setUpdatePasswordOutput([]);
+                setOldPasswordHighlighted(false);
+                setNewPasswordHighlighted(false);
+                setOldPasswordErrors([]);
+                setNewPasswordErrors([]);
+            }, 3000);
             setOldPassword("");
             setNewPassword("");
             document.body.style.cursor = "default";
             setFormLoading2(false);
-            await update(); // Updates { data, status } ('useSession')
+            await update();
             return;
         }
     }
@@ -236,9 +347,19 @@ const Page = () => {
                     height={300}
                 />
 
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileSelect}
+                    className="hidden"
+                />
+
                 <button
-                    className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 rounded-md border-2 border-black text-black bg-orange-500 w-full 
-                    hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+                    type="button"
+                    disabled={imageLoading}
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 rounded-md border-2 border-black text-black w-full 
+                    ${imageLoading ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                     onClick={handleEditImage}
                 >
                     <FaImage className="text-2xl mr-1" />
@@ -246,13 +367,27 @@ const Page = () => {
                 </button>
 
                 {imageURL !== undefined && <button
-                    className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 rounded-md border-2 border-black text-black bg-orange-500 w-full 
-                    hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+                    type="button"
+                    disabled={imageLoading}
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 rounded-md border-2 border-black text-black w-full 
+                    ${imageLoading ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                     onClick={handleRemoveImage}
                 >
                     <FaTrash className="text-2xl mr-1" />
                     Remove existing profile photo
                 </button>}
+
+                {imageError && (
+                    <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc">
+                        <li className="mx-7">{imageError}</li>
+                    </ul>
+                )}
+
+                {imageSuccess && (
+                    <ul className="w-full flex flex-col items-start text-sm text-green-600 list-disc">
+                        <li className="mx-7">{imageSuccess}</li>
+                    </ul>
+                )}
 
             </div>
 
@@ -344,7 +479,6 @@ const Page = () => {
                                 setOldPasswordHighlighted(false);
                                 setOldPasswordErrors([]);
                                 setUpdatePasswordOutput([]);
-                                setPasswordIncorrectResponse(false);
                                 setUpdatePasswordOutputColor("black");
                             }
                         }
@@ -385,7 +519,6 @@ const Page = () => {
                                 setNewPasswordHighlighted(false);
                                 setNewPasswordErrors([]);
                                 setUpdatePasswordOutput([]);
-                                setPasswordIncorrectResponse(false);
                                 setUpdatePasswordOutputColor("black");
                             }
                         }
@@ -424,15 +557,18 @@ const Page = () => {
                         {updatePasswordOutput.map((error, i) => {
                             return <li key={i} className="mx-7">{error}</li>
                         })}
-                        {passwordIncorrectResponse &&
-                            <li className="mx-7 text-black">
-                                Click<Link className="mx-1 text-blue-600 underline sm:no-underline hover:underline"
-                                    href={`/reset-password/request${email !== "email@address.com" ? "?email=" + email : ""}`}>here</Link>to reset password.
-                            </li>
-                        }
                     </ul>
 
                 )}
+
+                {userHasPassword &&
+                    <Link
+                        className="mx-4 text-blue-600 underline sm:no-underline hover:underline mt-1"
+                        href={`/reset-password/request${email !== "email@address.com" ? "?email=" + email : ""}`}
+                    >
+                        Forgot Password?
+                    </Link>
+                }
 
             </form>
 

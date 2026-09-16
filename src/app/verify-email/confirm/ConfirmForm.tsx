@@ -35,6 +35,7 @@ const Page = () => {
             if (token === null) {
                 setSubmitResponse(["Error: Invalid token. Try clicking your the link in your inbox again, or send another email link if that does not work."]);
                 setResponseIsError(true);
+                setTimeout(() => setSubmitResponse([]), 5000);
                 return;
             }
 
@@ -52,12 +53,14 @@ const Page = () => {
             if (!result.ok) {
                 setSubmitResponse([data.error ?? "Something went wrong. Try again later."]);
                 setResponseIsError(true);
+                setTimeout(() => setSubmitResponse([]), 5000);
                 return;
             }
 
             // Sets success message
             setSubmitResponse(["Success! Email has been verified. Sign in to continue."]);
             setResponseIsError(false);
+            setTimeout(() => setSubmitResponse([]), 3000);
             return;
         }
         submit();
