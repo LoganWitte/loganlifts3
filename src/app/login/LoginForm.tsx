@@ -318,7 +318,7 @@ const Page = () => {
                     className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mb-1 rounded-md border-2 border-black text-black 
                         ${formLoading1 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
-                    <FaKey className="scale-160 ml-2 mr-4" />
+                    <FaKey className="scale-160 mr-3" />
                     Sign in with credentials
                 </button>
 
@@ -379,7 +379,7 @@ const Page = () => {
                     className={`flex flex-row items-center justify-center text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black text-black 
                         ${formLoading2 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
                 >
-                    <FaEnvelope className="scale-160 ml-2 mr-4" />
+                    <FaEnvelope className="scale-160 mr-3" />
                     Sign in with email link
                 </button>
 
