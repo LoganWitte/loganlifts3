@@ -181,8 +181,8 @@ const config = {
                 })
 
                 session.user.hasPassword = !!user?.password
-                if (user?.name) session.user.name = user.name
-                if (user?.image) session.user.image = user.image
+                session.user.name = user?.name ?? null
+                session.user.image = user?.image ?? null
                 if (user?.email) session.user.email = user.email
             }
 
