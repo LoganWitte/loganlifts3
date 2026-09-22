@@ -299,13 +299,13 @@ const CalculatorContent = () => {
                     <div className="flex items-center">
                         <input
                             type="number" id="lowerLimit" name="lowerLimit" min="1" max={(upperLimit === undefined || isNaN(upperLimit)) ? 10000 : upperLimit - 1} step="1" value={lowerLimit ?? ""}
-                            className="bg-gray-300 border sm:border border-black p-0.5 w-12 h-fit text-sm rounded-md"
+                            className="bg-gray-300 border sm:border border-black p-1 w-12 h-fit text-sm rounded-md"
                             onChange={handleLowerLimitChange}
                         />
                         <MoveHorizontal className="mx-1" />
                         <input
                             type="number" id="upperLimit" name="upperLimit" min={(lowerLimit === undefined || isNaN(lowerLimit)) ? 1 : lowerLimit + 1} max="10000" step="1" value={upperLimit ?? ""}
-                            className="bg-gray-300 border sm:border border-black p-0.5 w-12 h-fit text-sm rounded-md"
+                            className="bg-gray-300 border sm:border border-black p-1 w-12 h-fit text-sm rounded-md"
                             onChange={handleUpperLimitChange}
                         />
                     </div>
