@@ -38,10 +38,10 @@ datasource db {
 // The 'accounts' field is an array of Account objects, which store the user's linked OAuth accounts and their associated OAuth tokens. 
 // The 'sessions' field is an array of Session objects, which store the user's active sessions (if using the "database" session strategy).
 model User {
-  id                          String    @id @default(cuid())
+  id                          String     @id @default(cuid())
   name                        String?
   // User's email address, inherited from OAuth provider or entered manually for 'credentials' users. Must be unique across all users.
-  email                       String?   @unique
+  email                       String?    @unique
   // Whether the user's email address has been verified. For OAuth users, this value is inherited from the provider (Google or GitHub). 
   // For 'credentials' users, this value is set to true upon successful email verification via the Resend SDK.
   // For 'resend' users, this value is set to true upon successful magic link login via the Resend SDK.
@@ -55,6 +55,11 @@ model User {
   lastVerificationEmailSentAt DateTime? // Timestamp of the last verification email sent, tracking both verify-email and reset-password
   accounts                    Account[] // Stores all of a user's OAuth logins (Google, GitHub)
   sessions                    Session[] // Stores all of a user's active sessions (if using the "database" session strategy in the future)
+  exercises                   Exercise[] // User's custom exercises
+  lifts                       Lift[] // User's logged lifts
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Stores a user's linked OAuth accounts (Google, GitHub) and their associated OAuth tokens. 
@@ -103,4 +108,64 @@ model VerificationToken {
 model MagicLinkRateLimit {
   identifier String   @id
   lastSentAt DateTime
+}
+
+// Supported muscles that an exercise can be recorded to engage
+enum BodyPart {
+  Whole_Body @map("Whole Body")
+  Chest
+  Back
+  Shoulders
+  Biceps
+  Triceps
+  Forearms
+  Quads
+  Hamstrings
+  Calves
+  Glutes
+  Abductors
+  Adductors
+  Core
+}
+
+// Supported categories of exercises
+enum Category {
+  Barbell
+  Bodyweight
+  Dumbbell
+  Machine
+  Cable
+  Kettlebell
+}
+
+model Exercise {
+  id          String     @id @default(cuid())
+  userId      String? //Nullable to allow for global exercises
+  name        String
+  description String?
+  URLSlug     String     @unique
+  bodyParts   BodyPart[]
+  category    Category
+  tags        String[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  Lifts Lift[]
+}
+
+model Lift {
+  id         String   @id @default(cuid())
+  userId     String
+  exerciseId String
+  weight     Float
+  reps       Int
+  oneRepMax  Float
+  time       DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 }
