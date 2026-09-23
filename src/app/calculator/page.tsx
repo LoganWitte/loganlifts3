@@ -208,7 +208,7 @@ const CalculatorContent = () => {
                     <input
                         key={useKgs ? "kg" : "lb"}
                         type="number" id="weight" name="weight" min="1" step="1" defaultValue={displayWeight ?? ""}
-                        className="bg-gray-300 border sm:border-2 border-black p-1 ml-1 w-30 rounded-md"
+                        className="bg-gray-300 border border-black p-1 ml-1 w-30 rounded-md"
                         onChange={handleWeightChange}
                         onBlur={handleWeightBlur}
                     />
@@ -218,7 +218,7 @@ const CalculatorContent = () => {
                     <label htmlFor="reps" className="font-bold sm:text-lg">Reps:</label>
                     <input
                         type="number" id="reps" name="reps" min="1" step="1" defaultValue={reps ?? ""}
-                        className="bg-gray-300 border sm:border-2 border-black p-1 ml-1 w-30 rounded-md"
+                        className="bg-gray-300 border border-black p-1 ml-1 w-30 rounded-md"
                         onChange={handleRepsChange}
                         onBlur={handleRepsBlur}
                     />
@@ -235,7 +235,7 @@ const CalculatorContent = () => {
                                     setFormula(e.target.value as allowedFormula);
                                 }
                             }}
-                            className="bg-gray-300 border sm:border-2 border-black p-1 ml-1 rounded-md"
+                            className="bg-gray-300 border border-black p-1 ml-1 rounded-md"
                         >
                             <option value="Recommended">Recommended</option>
                             <option value="Brzycki">Brzycki</option>
@@ -251,8 +251,8 @@ const CalculatorContent = () => {
             </div>
 
             <div className="w-full flex flex-col items-center mb-1">
-                <div className="text-xl sm:text-2xl mb-2">
-                    Your 1RM: {oneRepMax !== undefined ? oneRepMax.toFixed(2) : "N/A"}{oneRepMax !== undefined && (useKgs ? "kg" : "lb")}
+                <div className="text-xl sm:text-2xl mb-3">
+                    Estimated 1RM: {oneRepMax !== undefined ? oneRepMax.toFixed(2) : "N/A"}{oneRepMax !== undefined && (useKgs ? "kg" : "lb")}
                 </div>
 
                 {status === "loading" ? (
@@ -283,11 +283,11 @@ const CalculatorContent = () => {
                 )}
             </div>
 
-            <div className="w-full flex flex-col items-center mb-2">
+            <div className="min-w-80 w-fit flex flex-col items-center mb-2">
 
                 <button
                     type="button"
-                    className="text-xl sm:text-2xl flex items-center hover:bg-stone-400 p-1 rounded-md hover:cursor-pointer"
+                    className="text-xl sm:text-2xl flex items-center hover:bg-stone-400 p-1 mt-1 mb-2 rounded-md hover:cursor-pointer"
                     onClick={() => setExpanded(!expanded)}
                 >
                     Equivalent Lifts
@@ -295,7 +295,7 @@ const CalculatorContent = () => {
                 </button>
 
                 <div className={`w-full flex flex-row sm:text-lg justify-center items-center px-4 transition-all ease-in-out duration-300 overflow-hidden ${!expanded ? "max-h-0" : "max-h-64"}`}>
-                    <div className="font-semibold p-1 text-lg sm:text-xl">Rep range:</div>
+                    <div className="font-semibold mr-2 text-lg sm:text-xl">Rep range:</div>
                     <div className="flex items-center">
                         <input
                             type="number" id="lowerLimit" name="lowerLimit" min="1" max={(upperLimit === undefined || isNaN(upperLimit)) ? 10000 : upperLimit - 1} step="1" value={lowerLimit ?? ""}
@@ -311,16 +311,16 @@ const CalculatorContent = () => {
                     </div>
                 </div>
 
-                <div className={`w-full ${expanded ? "max-h-60 border border-black" : "max-h-0 border-none"} transition-all duration-300 ease-in-out overflow-y-auto flex flex-col sm:text-lg`}>
-                    <div className="flex flex-row justify-between text-lg border-black sm:text-xl font-semibold">
-                        <div className="w-[50%] text-center border-r border-black">Reps</div>
+                <div className={`w-full ${expanded ? "max-h-60 border border-gray-500 mt-2 mb-1" : "max-h-0 border-none mt-0 mb-0"} transition-all duration-300 ease-in-out overflow-y-auto flex flex-col sm:text-lg`}>
+                    <div className="flex flex-row justify-between text-lg border-gray-500 sm:text-xl font-semibold">
+                        <div className="w-[50%] text-center border-r border-gray-500">Reps</div>
                         <div className="w-[50%] text-center">Weight</div>
                     </div>
                     {equivalents
                         .filter((equivalent): equivalent is number => equivalent !== undefined)
                         .map((equivalent, index) => (
-                            <div key={index} className="flex flex-row justify-between border-t border-black">
-                                <div className="w-[50%] text-center border-r border-black">{index + (lowerLimit ?? 0)}</div>
+                            <div key={index} className="w-full flex flex-row justify-between border-t border-gray-500">
+                                <div className="w-[50%] text-center border-r border-gray-500">{index + (lowerLimit ?? 0)}</div>
                                 <div className="w-[50%] text-center">{`${equivalent.toFixed(2)}${useKgs ? "kg" : "lb"}`}</div>
                             </div>
                         ))
