@@ -1,8 +1,7 @@
 'use client'
 
 import { useSession } from "next-auth/react";
-import { useRouter } from 'next/navigation'
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import Image from 'next/image';
 import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey } from 'react-icons/fa6'
 import { checkPassword, checkUsername } from "@/lib/credentialChecks";
@@ -10,15 +9,7 @@ import Link from 'next/link';
 
 const Page = () => {
 
-    const { data, status, update } = useSession();
-
-    // Redirect to home page if user is not already signed in
-    const router = useRouter();
-    useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push('/');
-        }
-    }, [router, status]);
+    const { data, update } = useSession();
 
     const currentUsername: string = useMemo(() =>
         data?.user?.name || "user",

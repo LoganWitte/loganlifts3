@@ -177,10 +177,12 @@ const config = {
                         name: true,
                         image: true,
                         email: true,
+                        isAdmin: true,
                     },
                 })
 
                 session.user.hasPassword = !!user?.password
+                session.user.isAdmin = !!user?.isAdmin
                 session.user.name = user?.name ?? null
                 session.user.image = user?.image ?? null
                 if (user?.email) session.user.email = user.email
