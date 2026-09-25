@@ -1,8 +1,9 @@
 import { Suspense } from "react";
-import ExerciseBrowser from "./ExerciseBrowser";
+import AdminExerciseBrowser from "./AdminExerciseBrowser";
 
-// 'ExerciseBrowser' uses 'useSearchParams', so it must be wrapped in Suspense
-export default function ExercisesPage() {
+// 'AdminExerciseBrowser' uses 'useSearchParams', so it must be wrapped in Suspense
+// Admin access to this page is enforced by middleware
+export default function AdminExercisesPage() {
     return (
         <Suspense fallback={
             <div className="flex flex-col items-center justify-center text-center p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160 sm:w-[60vw]">
@@ -11,7 +12,7 @@ export default function ExercisesPage() {
                 </div>
             </div>
         }>
-            <ExerciseBrowser />
+            <AdminExerciseBrowser />
         </Suspense>
     );
 }

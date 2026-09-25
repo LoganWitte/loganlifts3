@@ -3,8 +3,10 @@
 import { useSession } from "next-auth/react";
 import { useState, useMemo, useRef } from "react";
 import Image from 'next/image';
-import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey } from 'react-icons/fa6'
+import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey, FaWeightScale } from 'react-icons/fa6'
 import { checkPassword, checkUsername } from "@/lib/credentialChecks";
+import { MAX_BODY_WEIGHT } from "@/lib/constants";
+import { kgsToPounds, poundsToKgs } from "@/lib/formulas";
 import Link from 'next/link';
 
 const Page = () => {
@@ -31,12 +33,19 @@ const Page = () => {
         [data]
     );
 
+
     // Form inputs
     const [newUsername, setNewUsername] = useState('');
     const [oldPassword, setOldPassword] = useState('');
     const [oldPasswordVisible, setOldPasswordVisible] = useState(false);
     const [newPassword, setNewPassword] = useState('');
     const [newPasswordVisible, setNewPasswordVisible] = useState(false);
+    const [newBodyWeight, setNewBodyWeight] = useState('');
+    const [bodyWeightUnit, setBodyWeightUnit] = useState<"lbs" | "kg">("lbs");
+    // Values returned by '/api/account/bodyweight' after saving. These take priority over the session values,
+    // so the page never displays a stale value while (or if) the session is still refreshing.
+    const [savedBodyWeight, setSavedBodyWeight] = useState<{ value: number | null } | null>(null);
+    const [savedAutoUpdate, setSavedAutoUpdate] = useState<boolean | null>(null);
 
     // Form outputs
     const [usernameErrors, setUsernameErrors] = useState<string[]>([]);
@@ -53,11 +62,34 @@ const Page = () => {
     const [updatePasswordOutput, setUpdatePasswordOutput] = useState<string[]>([]);
     const [updatePasswordOutputColor, setUpdatePasswordOutputColor] = useState<"black" | "red" | "green">("black");
 
+    const [bodyWeightErrors, setBodyWeightErrors] = useState<string[]>([]);
+    const [bodyWeightHighlighted, setBodyWeightHighlighted] = useState(false);
+    const [updateBodyWeightOutput, setUpdateBodyWeightOutput] = useState<string[]>([]);
+    const [updateBodyWeightOutputColor, setUpdateBodyWeightOutputColor] = useState<"black" | "red" | "green">("black");
+    const [formLoading3, setFormLoading3] = useState(false);
+
+    // Stored in pounds
+    const currentBodyWeight: number | null = useMemo(() =>
+        savedBodyWeight !== null ? savedBodyWeight.value : (data?.user?.bodyWeight ?? null),
+        [data, savedBodyWeight]
+    );
+
+    // Defaults to true, matching the database default
+    const currentBodyWeightAutoUpdate: boolean = useMemo(() =>
+        savedAutoUpdate ?? data?.user?.bodyWeightAutoUpdate ?? true,
+        [data, savedAutoUpdate]
+    );
+
     // Image upload state
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imageLoading, setImageLoading] = useState(false);
     const [imageError, setImageError] = useState<string>('');
     const [imageSuccess, setImageSuccess] = useState<string>('');
+
+    // Formats a body weight (stored in pounds) in the currently selected unit
+    function formatBodyWeight(pounds: number): string {
+        return bodyWeightUnit === "kg" ? `${poundsToKgs(pounds)} kg` : `${pounds} lbs`;
+    }
 
     function handleEditImage() {
         fileInputRef.current?.click();
@@ -312,6 +344,112 @@ const Page = () => {
         }
     }
 
+    // Sends body weight and / or auto-update changes to '/api/account/bodyweight', displaying the result
+    // Returns whether the update succeeded
+    async function submitBodyWeightUpdate(body: { bodyWeight?: number | null, bodyWeightAutoUpdate?: boolean }, successMessage: string): Promise<boolean> {
+
+        document.body.style.cursor = "wait";
+        setFormLoading3(true);
+
+        // Clears output fields
+        setUpdateBodyWeightOutput([]);
+        setUpdateBodyWeightOutputColor("black");
+        setBodyWeightHighlighted(false);
+        setBodyWeightErrors([]);
+
+        // Updates body weight using '/api/account/bodyweight' endpoint
+        const result = await fetch('/api/account/bodyweight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+
+        // Displays error / success from above endpoint
+        const data = await result.json();
+        if (!result.ok) {
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setUpdateBodyWeightOutput([errorMsg]);
+            setUpdateBodyWeightOutputColor("red");
+            if (data.details?.bodyWeight) {
+                setBodyWeightErrors(data.details.bodyWeight);
+                setBodyWeightHighlighted(true);
+            }
+            setTimeout(() => {
+                setUpdateBodyWeightOutput([]);
+                setBodyWeightHighlighted(false);
+                setBodyWeightErrors([]);
+            }, 5000);
+            document.body.style.cursor = "default";
+            setFormLoading3(false);
+            return false;
+        }
+        else {
+            setSavedBodyWeight({ value: data.bodyWeight });
+            setSavedAutoUpdate(data.bodyWeightAutoUpdate);
+            setUpdateBodyWeightOutput([successMessage]);
+            setUpdateBodyWeightOutputColor("green");
+            setTimeout(() => {
+                setUpdateBodyWeightOutput([]);
+                setBodyWeightHighlighted(false);
+                setBodyWeightErrors([]);
+            }, 3000);
+            document.body.style.cursor = "default";
+            setFormLoading3(false);
+            await update(); // Updates { data, status } ('useSession')
+            return true;
+        }
+    }
+
+    async function handleUpdateBodyWeightSubmit() {
+
+        // Checks validity of body weight field, converting to pounds if necessary
+        const input = newBodyWeight.trim();
+        const value = Number(input);
+        const pounds = bodyWeightUnit === "kg" ? kgsToPounds(value) : Math.round(value * 100) / 100;
+        const maxInUnit = bodyWeightUnit === "kg" ? `${poundsToKgs(MAX_BODY_WEIGHT)} kg` : `${MAX_BODY_WEIGHT} lbs`;
+
+        let error = "";
+        if (input.length === 0) {
+            error = "Body weight missing.";
+        }
+        else if (!Number.isFinite(value) || pounds <= 0) {
+            error = "Body weight must be a positive number.";
+        }
+        else if (pounds > MAX_BODY_WEIGHT) {
+            error = `Body weight must be at most ${maxInUnit}.`;
+        }
+
+        // Handles error with body weight
+        if (error !== "") {
+            setUpdateBodyWeightOutput([]);
+            setBodyWeightErrors([error]);
+            setBodyWeightHighlighted(true);
+            setTimeout(() => {
+                setBodyWeightErrors([]);
+                setBodyWeightHighlighted(false);
+            }, 5000);
+            return;
+        }
+
+        const success = await submitBodyWeightUpdate({ bodyWeight: pounds }, `Body weight updated to ${formatBodyWeight(pounds)}.`);
+        if (success) setNewBodyWeight("");
+    }
+
+    async function handleRemoveBodyWeight() {
+        await submitBodyWeightUpdate({ bodyWeight: null }, "Body weight removed.");
+    }
+
+    async function handleAutoUpdateToggle(checked: boolean) {
+        // Shows the new value immediately, reverting if saving fails
+        const previous = currentBodyWeightAutoUpdate;
+        setSavedAutoUpdate(checked);
+        const success = await submitBodyWeightUpdate(
+            { bodyWeightAutoUpdate: checked },
+            checked ? "Auto-update turned on." : "Auto-update turned off."
+        );
+        if (!success) setSavedAutoUpdate(previous);
+    }
+
     return (
         <div className="flex flex-col items-center justify-center text-center p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160">
 
@@ -436,6 +574,120 @@ const Page = () => {
                 {updateNameOutput.length > 0 && (
                     <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${updateNameOutputColor === "red" ? "text-red-600" : updateNameOutputColor === "green" ? "text-green-600" : "text-black"}`}>
                         {updateNameOutput.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+            </form>
+
+            <form
+                className="flex flex-col mb-2 min-w-[80%]"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (formLoading3) return;
+                    handleUpdateBodyWeightSubmit();
+                }}
+            >
+
+                <div className="flex flex-row justify-center sm:text-lg mx-4 font-bold">
+                    Update body weight:
+                </div>
+
+                <div className="flex flex-row justify-center sm:text-lg mx-4">
+                    <span className="mr-1">Current body weight:</span>
+                    {currentBodyWeight !== null
+                        ? <span className="font-bold">{formatBodyWeight(currentBodyWeight)}</span>
+                        : <span className="text-stone-600">Not set</span>
+                    }
+                </div>
+
+                <div className="flex flex-row gap-2 mx-4 mt-1">
+
+                    <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        className={`
+                            grow min-w-0 p-2 rounded-md border-2
+                            ${bodyWeightHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
+                        `}
+                        placeholder={`New body weight (${bodyWeightUnit})`}
+                        value={newBodyWeight}
+                        onChange={
+                            (e) => {
+                                setNewBodyWeight(e.target.value);
+                                setBodyWeightHighlighted(false);
+                                setBodyWeightErrors([]);
+                                setUpdateBodyWeightOutput([]);
+                                setUpdateBodyWeightOutputColor("black");
+                            }
+                        }
+                    />
+
+                    <select
+                        aria-label="Body weight unit"
+                        className="p-2 rounded-md border-2 border-black text-black bg-white hover:cursor-pointer"
+                        value={bodyWeightUnit}
+                        onChange={(e) => setBodyWeightUnit(e.target.value as "lbs" | "kg")}
+                    >
+                        <option value="lbs">lbs</option>
+                        <option value="kg">kg</option>
+                    </select>
+
+                </div>
+
+                {bodyWeightErrors.length > 0 && (
+                    <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc mt-1">
+                        {bodyWeightErrors.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+                <button
+                    type="submit"
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black  text-black 
+                        ${formLoading3 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
+                >
+                    <FaWeightScale className="scale-160 ml-2 mr-4" />
+                    Update body weight
+                </button>
+
+                {currentBodyWeight !== null && <button
+                    type="button"
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black  text-black 
+                        ${formLoading3 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
+                    onClick={() => {
+                        if (formLoading3) return;
+                        handleRemoveBodyWeight();
+                    }}
+                >
+                    <FaTrash className="scale-160 ml-2 mr-4" />
+                    Remove body weight
+                </button>}
+
+                {/* Saves immediately when toggled */}
+                <label className={`flex flex-row items-center gap-2 mx-4 mt-2 text-left sm:text-lg font-medium ${formLoading3 ? "hover:cursor-wait" : "hover:cursor-pointer"}`}>
+                    <input
+                        type="checkbox"
+                        className={`accent-orange-500 scale-125 ${formLoading3 ? "hover:cursor-wait" : "hover:cursor-pointer"}`}
+                        checked={currentBodyWeightAutoUpdate}
+                        disabled={formLoading3}
+                        onChange={(e) => handleAutoUpdateToggle(e.target.checked)}
+                    />
+                    Auto-update
+                </label>
+
+                {/* 'w-0 min-w-full' fills the form's width without widening it */}
+                <div className="w-0 min-w-full pl-10 pr-4 text-xs text-left text-stone-600">
+                    When on, logging a lift with a body weight also updates your body weight here,
+                    as long as that lift is your most recent one. Turn this off to only change it manually.
+                </div>
+
+                {updateBodyWeightOutput.length > 0 && (
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${updateBodyWeightOutputColor === "red" ? "text-red-600" : updateBodyWeightOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                        {updateBodyWeightOutput.map((error, i) => {
                             return <li key={i} className="mx-7">{error}</li>
                         })}
                     </ul>

@@ -27,10 +27,11 @@ export const BODY_PART_OPTIONS = ["Any Body Part", "Whole Body", "Chest", "Back"
 export type Exercise = {
     id: string,                 // String @id @default(cuid())
     // userId & User relation are optional, allowing for global exercises.
+    // Cleared when an exercise is approved, making it global.
     userId: string | null,      // String? - User? @relation(fields: [userId], references: [id], onDelete: Cascade)
     name: string,               // String
     description: string | null, // String | null
-    URLSlug: string,            // String @unique
+    URLSlug: string,            // String
     bodyParts: bodyPart[],      // BodyPart[]
     category: Category,         // Category
     tags: string[],             // String[]
@@ -40,9 +41,46 @@ export type Exercise = {
     // number > 0 in the case of calculable loads like pull-ups or push-ups
     // Reference schema.prisma for examples
     weightCoefficient: number | null, // Float > 0 | null
-    isApproved: boolean         // Boolean @default(false)
+    // Set to false when an exercise is approved or rejected.
+    // Cannot be true whilst isApproved or isRejected are true.
+    isSuggested: boolean,       // Boolean @default(false)
+    isApproved: boolean,        // Boolean @default(false)
+    isRejected: boolean,        // Boolean @default(false)
     createdAt: string,          // DateTime @default(now())
     updatedAt: string,          // DateTime @updatedAt
+};
+
+// The user-editable fields of an "Exercise", as sent to '/api/exercises/create' and '/api/exercises/update'.
+// Validated & normalized using 'lib/exerciseChecks.ts'.
+export type ExerciseFields = Pick<Exercise, "name" | "description" | "bodyParts" | "category" | "tags" | "weightCoefficient">;
+
+// Request body for '/api/exercises/create'
+// 'isApproved' may only be true for admins, which creates the exercise as global & approved immediately (no owned copy).
+export type CreateExerciseRequest = ExerciseFields & {
+    isSuggested?: boolean,
+    isApproved?: boolean,
+};
+
+// Request body for '/api/exercises/update'
+// Contains the complete editable exercise, overwriting all editable fields. Omitted flags keep their current values.
+// 'isSuggested' may only be changed by the exercise's owner. 'isApproved' & 'isRejected' may only be changed by admins.
+export type UpdateExerciseRequest = ExerciseFields & {
+    id: string,
+    isSuggested?: boolean,
+    isApproved?: boolean,
+    isRejected?: boolean,
+};
+
+// Request body for '/api/exercises/delete'
+export type DeleteExerciseRequest = {
+    id: string,
+};
+
+// An "Exercise" as returned by '/api/exercises/getsuggested' (admin only).
+// 'suggestedBy' is the owner of suggested & rejected exercises.
+// 'suggestedBy' is null for global exercises (approved or un-approved), as they no longer have an owner.
+export type SuggestedExercise = Exercise & {
+    suggestedBy: { name: string | null, email: string | null } | null,
 };
 
 // A "Lift" is a single set of a given exercise, for example a set of 8 reps with 135lbs on bench press.

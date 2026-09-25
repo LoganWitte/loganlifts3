@@ -12,6 +12,11 @@ export const proxy = auth((req) => {
         return NextResponse.redirect(new URL('/login', req.nextUrl.origin))
     }
 
+    // Redirects signed-out users from exercises/add page to login page
+    if (pathname.startsWith('/exercises/add') && !session?.user) {
+        return NextResponse.redirect(new URL('/login', req.nextUrl.origin))
+    }
+
     // Redirects non-admin users from admin pages to home page
     if (pathname.startsWith('/admin') && !session?.user?.isAdmin) {
         return NextResponse.redirect(new URL('/', req.nextUrl.origin))
@@ -20,7 +25,7 @@ export const proxy = auth((req) => {
     return NextResponse.next()
 })
 
-// Limits proxy to these paths only (includes '/account' and '/admin' themselves)
+// Limits proxy to these paths only (includes '/account', '/admin', and '/exercises/add' themselves)
 export const config = {
-    matcher: ['/account/:path*', '/admin/:path*'],
+    matcher: ['/account/:path*', '/admin/:path*', '/exercises/add/:path*'],
 }

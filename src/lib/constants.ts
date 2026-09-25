@@ -5,6 +5,12 @@ export const MAX_EMAIL_LENGTH = 254; // RFC 5321 limit
 export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 100;
 export const RESEND_COOLDOWN_MS = 60 * 1000; // 1m / 60s
+export const MIN_EXERCISE_NAME_LENGTH = 1;
+export const MAX_EXERCISE_NAME_LENGTH = 50;
+export const MAX_EXERCISE_DESCRIPTION_LENGTH = 500;
+export const MAX_EXERCISE_TAG_LENGTH = 30;
+export const MAX_EXERCISE_TAG_COUNT = 10;
+export const MAX_BODY_WEIGHT = 1500; // lbs, sanity cap for body weight input
 
 //Converts a string to a URL-friendly slug
 export function convertToSlug(input: string): string {

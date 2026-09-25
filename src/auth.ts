@@ -178,6 +178,8 @@ const config = {
                         image: true,
                         email: true,
                         isAdmin: true,
+                        bodyWeight: true,
+                        bodyWeightAutoUpdate: true,
                     },
                 })
 
@@ -186,6 +188,8 @@ const config = {
                 session.user.name = user?.name ?? null
                 session.user.image = user?.image ?? null
                 if (user?.email) session.user.email = user.email
+                session.user.bodyWeight = user?.bodyWeight ?? null // Stored in pounds
+                session.user.bodyWeightAutoUpdate = user?.bodyWeightAutoUpdate ?? true
             }
 
             session.provider = token.provider as string | undefined

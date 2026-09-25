@@ -6,6 +6,8 @@ declare module 'next-auth' {
     user: {
       hasPassword?: boolean
       isAdmin: boolean
+      bodyWeight?: number | null
+      bodyWeightAutoUpdate?: boolean
     } & DefaultSession['user']
   }
 }
