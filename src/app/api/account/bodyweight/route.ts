@@ -48,6 +48,8 @@ export async function POST(req: Request) {
         data: {
             // Rounded to 2 decimal places, matching 'poundsToKgs' / 'kgsToPounds' in lib/formulas.ts
             ...(bodyWeight !== undefined ? { bodyWeight: bodyWeight === null ? null : Math.round(bodyWeight * 100) / 100 } : {}),
+            // Lifts logged before this time can no longer auto-update the body weight (see 'autoUpdateBodyWeight' in lib/liftServer.ts)
+            ...(bodyWeight !== undefined ? { bodyWeightUpdatedAt: new Date() } : {}),
             ...(bodyWeightAutoUpdate !== undefined ? { bodyWeightAutoUpdate } : {}),
         },
         select: { bodyWeight: true, bodyWeightAutoUpdate: true },

@@ -5,7 +5,7 @@ import { Providers } from "./providers";
 import Navbar from "./components/Navbar";
 
 const font = Funnel_Display({
-  weight: ["300" , "400" , "500" , "600" , "700" , "800"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   subsets: ["latin"],
 });
 
@@ -20,7 +20,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${font.className} h-full antialiased`}>
       <body className="h-full flex flex-col">
         <Providers>
-          <Navbar/>
+          <Navbar />
           <main className="flex-1 flex flex-col items-center overflow-y-auto bg-stone-400 text-black">
             {children}
           </main>

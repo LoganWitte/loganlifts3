@@ -11,6 +11,7 @@ export const MAX_EXERCISE_DESCRIPTION_LENGTH = 500;
 export const MAX_EXERCISE_TAG_LENGTH = 30;
 export const MAX_EXERCISE_TAG_COUNT = 10;
 export const MAX_BODY_WEIGHT = 1500; // lbs, sanity cap for body weight input
+export const MAX_LIFT_WEIGHT = 3000; // lbs, sanity cap for total weight calculation
 
 //Converts a string to a URL-friendly slug
 export function convertToSlug(input: string): string {

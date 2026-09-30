@@ -60,6 +60,8 @@ model User {
   bodyWeight                  Float? // User's body weight, optional.
   // Whether user wants to have their 'bodyWeight' auto-updated when logging a lift. Defaults to true at account creation.
   bodyWeightAutoUpdate        Boolean    @default(true)
+  // When 'bodyWeight' was last set (from '/account' or an auto-updating lift). Lifts logged before this time can't auto-update 'bodyWeight'.
+  bodyWeightUpdatedAt         DateTime?
   isAdmin                     Boolean    @default(false)
 
   createdAt DateTime @default(now())

@@ -1,5 +1,15 @@
 export type allowedFormula = "Recommended" | "Brzycki" | "Epley" | "Lombardi" | "OConnor";
 
+// undefined only if: (addedWeight is not a positive number OR weightCoefficient is not a positive number) AND bodyWeight is not either a positive number
+export function getEquivalentWeight(bodyWeight: number | null, addedWeight: number | null, weightCoefficient: number | null): number | undefined {
+    if (addedWeight === null || addedWeight <= 0 || weightCoefficient === null || weightCoefficient <= 0) {
+        return (bodyWeight && bodyWeight >= 0) ? bodyWeight : undefined;
+    }
+    else {
+        return (((bodyWeight && bodyWeight > 0) ? bodyWeight : 0) + (addedWeight / weightCoefficient));
+    }
+}
+
 // undefined only if: (brzycki && reps >= 37) === true
 export function getOneRepMax(weight: number, reps: number, formula: allowedFormula): number | undefined {
     if (weight <= 0 || reps <= 0) return 0;

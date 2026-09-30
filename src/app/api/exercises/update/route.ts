@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import type { Prisma } from '@/generated/prisma/client'
 import { checkExerciseFields, normalizeExerciseFields, getGlobalExerciseSlug, getUserExerciseSlug } from '@/lib/exerciseChecks'
 import { toPrismaExerciseData, serializeExercise, isOptionalBoolean, isUserSlugTaken, isApprovedGlobalSlugTaken } from '@/lib/exerciseServer'
+import { recalculateExerciseLifts } from '@/lib/liftServer'
 import type { ExerciseFields } from '@/lib/models'
 
 // Updates an exercise. The request contains the complete editable exercise, overwriting all editable fields.
@@ -11,6 +12,9 @@ import type { ExerciseFields } from '@/lib/models'
 // - Admins may edit suggested, rejected & global exercises, and change 'isApproved' / 'isRejected'.
 //   Approving clears the user relation, making the exercise global. Its URLSlug becomes the global form.
 //   Since the admin submits the complete exercise, any edits the owner made in the meantime are overwritten.
+// - If 'weightCoefficient' changes, every user's lifts of this exercise have 'weight' & 'oneRepMax' recalculated.
+//   Changing between traditional (null) and non-traditional (0 or > 0) is rejected while the exercise has lifts,
+//   as those lifts' weights can't be converted between the two.
 export async function POST(req: Request) {
 
     const session = await auth()
@@ -88,6 +92,22 @@ export async function POST(req: Request) {
     }
 
     const fields = normalizeExerciseFields(body as ExerciseFields)
+
+    // Rejects changing between traditional & non-traditional while any user has logged lifts to this exercise
+    const exerciseTypeChanged = (fields.weightCoefficient === null) !== (exercise.weightCoefficient === null)
+    if (exerciseTypeChanged && await prisma.lift.count({ where: { exerciseId: exercise.id } }) > 0) {
+        return NextResponse.json(
+            {
+                error: 'This exercise has logged lifts, so it cannot be changed between a traditional and a bodyweight exercise.',
+                details: {
+                    weightCoefficient: [exercise.weightCoefficient === null
+                        ? 'Added weight coefficient must stay empty, as this exercise has logged lifts.'
+                        : 'Added weight coefficient is required (0 or more), as this exercise has logged lifts.'],
+                },
+            },
+            { status: 409 }
+        )
+    }
     const fieldData = toPrismaExerciseData(fields)
     const globalSlug = getGlobalExerciseSlug(fields.name)
 
@@ -168,9 +188,18 @@ export async function POST(req: Request) {
         }
     }
 
-    const updated = await prisma.exercise.update({
-        where: { id: exercise.id },
-        data,
+    // Updates the exercise, and recalculates its lifts if 'weightCoefficient' changed (all or nothing)
+    const updated = await prisma.$transaction(async (tx) => {
+        const result = await tx.exercise.update({
+            where: { id: exercise.id },
+            data,
+        })
+
+        if (fields.weightCoefficient !== exercise.weightCoefficient) {
+            await recalculateExerciseLifts(tx, exercise.id, fields.weightCoefficient)
+        }
+
+        return result
     })
 
     return NextResponse.json({ ok: true, exercise: serializeExercise(updated) })

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowUpWideNarrow, ArrowDownWideNarrow, Plus } from 'lucide-react';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS, type Exercise } from "@/lib/models";
 import ExerciseCard, { type CalculatorParams } from "./ExerciseCard";
+import { useExerciseContext } from "@/app/components/contextProviders/ExerciseProvider";
 
 // Number of exercises shown at once, and how many are added / removed by the show more / fewer arrows
 const EXERCISES_STEP = 4;
@@ -75,47 +76,17 @@ const Page = () => {
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }, [searchQuery, category, bodyPart, mineOnly, searchParams, pathname, router]);
 
-    // Fetched data
-    const [exercises, setExercises] = useState<Exercise[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [fetchError, setFetchError] = useState("");
+    // Pulls exercises from context. 'storedExercises' is null until the first fetch completes,
+    // otherwise it holds the most recent data (possibly from a previous visit) while refreshing.
+    const { exercises: storedExercises, isLoading, error: fetchError, refreshExercises } = useExerciseContext();
+    const exercises = useMemo(() => storedExercises ?? [], [storedExercises]);
 
-    // Fetches exercises using '/api/exercises/get' endpoint once session has loaded
+    // Refreshes exercises each visit once session has loaded ('/api/exercises/get')
     // Re-fetches if the user signs in / out, since the result includes the user's own exercises
     useEffect(() => {
         if (status === "loading") return;
-
-        let cancelled = false;
-
-        async function fetchExercises() {
-            setIsLoading(true);
-            setFetchError("");
-
-            try {
-                const result = await fetch('/api/exercises/get');
-                const data = await result.json();
-                if (cancelled) return;
-
-                if (!result.ok) {
-                    setFetchError(data.error ?? "Something went wrong. Try again later.");
-                    setExercises([]);
-                }
-                else {
-                    setExercises(data.exercises);
-                }
-            }
-            catch {
-                if (cancelled) return;
-                setFetchError("Server failed to respond. Confirm internet connection or try again later.");
-                setExercises([]);
-            }
-
-            setIsLoading(false);
-        }
-        fetchExercises();
-
-        return () => { cancelled = true; };
-    }, [status]);
+        refreshExercises();
+    }, [status, refreshExercises]);
 
     // Filters exercises by search query (name, description, tags), category, body part, and ownership
     const filteredExercises = useMemo(() => {
@@ -248,13 +219,18 @@ const Page = () => {
 
             {/* Results */}
             <div className="w-full px-4 mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {isLoading ? (
+                {/* Previous data (if any) is displayed while refreshing */}
+                {storedExercises === null && fetchError === "" ? (
                     <p className="col-span-full text-center text-lg font-semibold">
                         Loading exercises...
                     </p>
-                ) : fetchError !== "" ? (
+                ) : storedExercises === null ? (
                     <p className="col-span-full text-center text-sm text-red-600">
                         {fetchError}
+                    </p>
+                ) : filteredExercises.length === 0 && isLoading ? (
+                    <p className="col-span-full text-center text-lg font-semibold">
+                        Loading exercises...
                     </p>
                 ) : filteredExercises.length === 0 ? (
                     <p className="col-span-full text-center text-lg font-semibold">
@@ -266,6 +242,13 @@ const Page = () => {
                     ))
                 )}
             </div>
+
+            {/* Failed refresh while previous data is displayed */}
+            {storedExercises !== null && fetchError !== "" && (
+                <p className="w-full px-4 mt-2 text-center text-sm text-red-600">
+                    Couldn&apos;t refresh exercises: {fetchError}
+                </p>
+            )}
 
             {/* Create exercise link */}
             <Link

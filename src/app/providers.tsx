@@ -1,5 +1,7 @@
 'use client'
 import { SessionProvider } from 'next-auth/react'
+import { ExerciseProvider } from '@/app/components/contextProviders/ExerciseProvider';
+
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -8,7 +10,9 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
-      {children}
+      <ExerciseProvider>
+        {children}
+      </ExerciseProvider>
     </SessionProvider>
   )
 }

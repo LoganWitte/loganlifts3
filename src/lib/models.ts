@@ -88,16 +88,58 @@ export type Lift = {
     id: string,                 // String @id @default(cuid())
     userId: string,             // String - User @relation(fields: [userId], references: [id], onDelete: Cascade)
     exerciseId: string,         // String - Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+    // All weights are stored in pounds.
+    // For traditional exercises, the weight entered by the user.
+    // For bodyweight exercises, the equivalent weight calculated server-side using 'calculateLiftWeight' (lib/liftChecks.ts).
     weight: number,             // Float > 0
     reps: number,               // Int > 0
+    // Calculated server-side using the "Recommended" formula. Other formulas may be used client-side (e.g. rep table).
     oneRepMax: number,          // Float > 0
     // bodyWeight is always available to be recorded.
     // It will default to the user's recorded bodyWeight value.
     // This value can be set in '/account'.
     // This value will also be updated at log-time if the lift being logged happened after the 
+    // user's body weight was last set (User 'bodyWeightUpdatedAt'), and the user has 'bodyWeightAutoUpdate' on.
     bodyWeight: number | null,  // Float > 0 | null
     addedWeight: number | null  // Float > 0 | null
     time: string,               // DateTime - when the lift is logged
     createdAt: string,          // DateTime @default(now())
     updatedAt: string,          // DateTime @updatedAt
+};
+
+// The user-editable fields of a "Lift", as sent to '/api/lifts/create' and '/api/lifts/update'.
+// Validated & normalized using 'lib/liftChecks.ts'.
+// - weight: only used for traditional exercises (weightCoefficient === null), ignored otherwise.
+// - addedWeight: only allowed for bodyweight exercises (weightCoefficient !== null). 0 is treated as null.
+// - time: ISO date string. Omit to use the current time.
+export type LiftFields = {
+    weight?: number | null,
+    reps: number,
+    bodyWeight?: number | null,
+    addedWeight?: number | null,
+    time?: string | null,
+};
+
+// Request body for '/api/lifts/create'
+export type CreateLiftRequest = LiftFields & {
+    exerciseId: string,
+};
+
+// Request body for '/api/lifts/update'
+// Contains the complete editable lift, overwriting all editable fields. A lift's exercise cannot be changed.
+export type UpdateLiftRequest = LiftFields & {
+    id: string,
+};
+
+// Request body for '/api/lifts/delete'
+export type DeleteLiftRequest = {
+    id: string,
+};
+
+// Response from '/api/lifts/create' and '/api/lifts/update'
+// 'bodyWeightUpdated' is true if the user's account body weight was auto-updated (client should refresh its session).
+export type LiftResponse = {
+    ok: true,
+    lift: Lift,
+    bodyWeightUpdated: boolean,
 };
