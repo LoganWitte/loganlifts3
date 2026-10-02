@@ -8,6 +8,7 @@ export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 100;
 export const RESEND_COOLDOWN_MS = 60 * 1000; // 1m / 60s
 export const MIN_EXERCISE_NAME_LENGTH = 1;
+export const MAX_EXERCISE_NAME_LENGTH = 100;
 export const MAX_EXERCISE_DESCRIPTION_LENGTH = 500;
 export const MAX_EXERCISE_TAG_LENGTH = 30;
 export const MAX_EXERCISE_TAG_COUNT = 10;
