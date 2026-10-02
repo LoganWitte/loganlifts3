@@ -1,7 +1,9 @@
 'use client'
 
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
+import { ListPlus } from "lucide-react";
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS, type Exercise, type SuggestedExercise } from "@/lib/models";
 import AdminExerciseCard, { getAdminExerciseTab, type AdminExerciseTab } from "./AdminExerciseCard";
 
@@ -161,6 +163,16 @@ const Page = () => {
             <div className="flex flex-row justify-center text-xl sm:text-2xl font-semibold mb-2">
                 Moderate exercises
             </div>
+
+            {/* Bulk input link */}
+            <Link
+                href="/admin/exercises/bulkinput"
+                className="flex flex-row items-center justify-center gap-2 font-medium px-3 py-1 mb-3 rounded-md border-2 border-black text-black
+                    bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+            >
+                <ListPlus size={18} />
+                Bulk input
+            </Link>
 
             {/* Tabs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full px-4" role="tablist">
