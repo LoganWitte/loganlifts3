@@ -2,20 +2,27 @@
 
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from 'next/link';
-import { ArrowUpWideNarrow, ArrowDownWideNarrow } from 'lucide-react';
 import ProfileCard from "./ProfileCard";
 import { useProfileContext } from "@/app/components/contextProviders/ProfileProvider";
+import Pagination, { getPageCount, MAX_PER_PAGE } from "@/app/components/Pagination";
 
-// Number of profiles shown at once, and how many are added / removed by the show more / fewer arrows (matching '/exercises')
-const PROFILES_STEP = 4;
-const DEFAULT_MAX_PROFILES = 12;
+// Number of profiles shown per page by default (matching '/exercises')
+const DEFAULT_PER_PAGE = 12;
 
 // Search param keys used to save filters in the URL
 const SEARCH_PARAM = "search";
 const SORT_PARAM = "sort";
 const HAS_LIFTS_PARAM = "hasLifts";
+const PAGE_PARAM = "page";
+const PER_PAGE_PARAM = "perPage";
+
+// Parses a positive whole number search param, or returns the fallback if missing / invalid
+function parsePositiveIntParam(value: string | null, fallback: number, max: number): number {
+    const parsed = value === null ? NaN : parseInt(value);
+    return (isNaN(parsed) || parsed < 1) ? fallback : Math.min(parsed, max);
+}
 
 // Sort options, as [URL value, label]. The first is the default, matching the order from '/api/users/get'.
 const SORT_OPTIONS = [
@@ -45,7 +52,9 @@ const Page = () => {
     const [searchQuery, setSearchQuery] = useState(paramSearch ?? "");
     const [sort, setSort] = useState<SortOption>(isSortOption(paramSort) ? paramSort : SORT_OPTIONS[0][0]);
     const [hasLiftsOnly, setHasLiftsOnly] = useState(searchParams.get(HAS_LIFTS_PARAM) === "true");
-    const [maxProfiles, setMaxProfiles] = useState(DEFAULT_MAX_PROFILES);
+    // Pagination (1-based page). Reset to the first page whenever a filter or the sort changes.
+    const [page, setPage] = useState(parsePositiveIntParam(searchParams.get(PAGE_PARAM), 1, Number.MAX_SAFE_INTEGER));
+    const [perPage, setPerPage] = useState(parsePositiveIntParam(searchParams.get(PER_PAGE_PARAM), DEFAULT_PER_PAGE, MAX_PER_PAGE));
 
     // Saves filters to URL (without adding history entries), preserving any other params
     // Only non-default filter values are written, keeping the URL short
@@ -59,11 +68,13 @@ const Page = () => {
         setOrDelete(SEARCH_PARAM, searchQuery.trim().length > 0 ? searchQuery : null);
         setOrDelete(SORT_PARAM, sort !== SORT_OPTIONS[0][0] ? sort : null);
         setOrDelete(HAS_LIFTS_PARAM, hasLiftsOnly ? "true" : null);
+        setOrDelete(PAGE_PARAM, page !== 1 ? String(page) : null);
+        setOrDelete(PER_PAGE_PARAM, perPage !== DEFAULT_PER_PAGE ? String(perPage) : null);
 
         const query = params.toString();
         if (query === searchParams.toString()) return;
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    }, [searchQuery, sort, hasLiftsOnly, searchParams, pathname, router]);
+    }, [searchQuery, sort, hasLiftsOnly, page, perPage, searchParams, pathname, router]);
 
     // Pulls profiles from context. 'storedProfiles' is null until the first fetch completes,
     // otherwise it holds the most recent data (possibly from a previous visit) while refreshing.
@@ -99,24 +110,23 @@ const Page = () => {
         return filtered;
     }, [profiles, searchQuery, sort, hasLiftsOnly]);
 
-    const shownCount = Math.min(maxProfiles, filteredProfiles.length);
+    // Clamps the page to the available pages (e.g. after results shrink), without changing the saved page
+    const pageCount = getPageCount(filteredProfiles.length, perPage);
+    const currentPage = Math.min(page, pageCount);
+    const pageProfiles = filteredProfiles.slice((currentPage - 1) * perPage, currentPage * perPage);
 
-    function showMore() {
-        if (maxProfiles < filteredProfiles.length) {
-            setMaxProfiles(maxProfiles + PROFILES_STEP);
-        }
+    // Changing the page size keeps the first visible profile on screen
+    function handlePerPageChange(newPerPage: number) {
+        const firstIndex = (currentPage - 1) * perPage;
+        setPerPage(newPerPage);
+        setPage(Math.floor(firstIndex / newPerPage) + 1);
     }
 
-    function showFewer() {
-        // Snaps down to the nearest step below the number of results, if showing all results
-        if (maxProfiles > filteredProfiles.length) {
-            setMaxProfiles(Math.max(PROFILES_STEP, filteredProfiles.length % PROFILES_STEP === 0
-                ? filteredProfiles.length - PROFILES_STEP
-                : filteredProfiles.length - filteredProfiles.length % PROFILES_STEP));
-        }
-        else {
-            setMaxProfiles(Math.max(PROFILES_STEP, maxProfiles - PROFILES_STEP));
-        }
+    // The bottom controls also scroll back up to the top of the results
+    const resultsRef = useRef<HTMLDivElement>(null);
+    function handleBottomPageChange(newPage: number) {
+        setPage(newPage);
+        resultsRef.current?.scrollIntoView({ block: "start" });
     }
 
     return (
@@ -137,7 +147,7 @@ const Page = () => {
                     value={searchQuery}
                     onChange={(e) => {
                         setSearchQuery(e.target.value);
-                        setMaxProfiles(DEFAULT_MAX_PROFILES);
+                        setPage(1);
                     }}
                 />
 
@@ -148,7 +158,7 @@ const Page = () => {
                         value={sort}
                         onChange={(e) => {
                             setSort(e.target.value as SortOption);
-                            setMaxProfiles(DEFAULT_MAX_PROFILES);
+                            setPage(1);
                         }}
                     >
                         {SORT_OPTIONS.map(([option, label]) => {
@@ -166,39 +176,26 @@ const Page = () => {
                             checked={hasLiftsOnly}
                             onChange={(e) => {
                                 setHasLiftsOnly(e.target.checked);
-                                setMaxProfiles(DEFAULT_MAX_PROFILES);
+                                setPage(1);
                             }}
                         />
                         Has public lifts
                     </label>
 
-                    <div className="flex flex-row items-center rounded-md border-2 border-black bg-white px-2">
-                        <span className="select-none">
-                            Results: {shownCount} / {filteredProfiles.length}
-                        </span>
-                        <button
-                            type="button"
-                            title="Show more"
-                            className="ml-2 p-1 rounded-full hover:bg-stone-300 hover:cursor-pointer"
-                            onClick={showMore}
-                        >
-                            <ArrowUpWideNarrow size={24} />
-                        </button>
-                        <button
-                            type="button"
-                            title="Show fewer"
-                            className="p-1 rounded-full hover:bg-stone-300 hover:cursor-pointer"
-                            onClick={showFewer}
-                        >
-                            <ArrowDownWideNarrow size={24} />
-                        </button>
-                    </div>
+                    <Pagination
+                        page={currentPage}
+                        setPage={setPage}
+                        perPage={perPage}
+                        setPerPage={handlePerPageChange}
+                        total={filteredProfiles.length}
+                        itemLabel="profiles"
+                    />
 
                 </div>
             </div>
 
             {/* Results */}
-            <div className="w-full px-4 mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div ref={resultsRef} className="scroll-mt-4 w-full px-4 mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* Previous data (if any) is displayed while refreshing */}
                 {storedProfiles === null && fetchError === "" ? (
                     <p className="col-span-full text-center text-lg font-semibold">
@@ -221,11 +218,25 @@ const Page = () => {
                         No profiles match these filters.
                     </p>
                 ) : (
-                    filteredProfiles.slice(0, maxProfiles).map((profile) => (
+                    pageProfiles.map((profile) => (
                         <ProfileCard key={profile.id} profile={profile} />
                     ))
                 )}
             </div>
+
+            {/* Bottom page controls, so the next page can be reached without scrolling back up */}
+            {pageCount > 1 && (
+                <div className="flex flex-row justify-center w-full px-4 mt-3">
+                    <Pagination
+                        page={currentPage}
+                        setPage={handleBottomPageChange}
+                        perPage={perPage}
+                        setPerPage={handlePerPageChange}
+                        total={filteredProfiles.length}
+                        itemLabel="profiles"
+                    />
+                </div>
+            )}
 
             {/* Failed refresh while previous data is displayed */}
             {storedProfiles !== null && fetchError !== "" && (

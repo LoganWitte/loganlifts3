@@ -72,6 +72,9 @@ model User {
   bioPublic                   Boolean    @default(true)
   bodyWeightPublic            Boolean    @default(false)
   liftsPublic                 Boolean    @default(false)
+  // Whether the user prefers kilograms over pounds. Weights are always stored in pounds, this only affects display & input.
+  // Loaded into the session, & used as the initial unit by 'UnitProvider'. Updated via '/api/account/preferences/useKgs'.
+  prefersKgs                  Boolean    @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

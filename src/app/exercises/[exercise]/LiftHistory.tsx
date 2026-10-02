@@ -179,10 +179,10 @@ const LiftRow = ({ lift, weightCoefficient, useKgs, accountBodyWeight, onUseInTa
     }
 
     return (
-        <div className="flex flex-col p-3 rounded-md border-2 border-black bg-white">
+        <div className="flex flex-col p-3 rounded-md border-2 border-black bg-slate-100">
 
             {editing ? (
-                <div className="flex flex-col items-center -mx-4">
+                <div className="w-full">
                     <LiftFieldInputs
                         values={values}
                         setValues={setValues}
@@ -226,21 +226,23 @@ const LiftRow = ({ lift, weightCoefficient, useKgs, accountBodyWeight, onUseInTa
 export const PreviousBest = ({ lift, weightCoefficient, useKgs }: { lift: Lift, weightCoefficient: number | null, useKgs: boolean }) => {
     const traditional = weightCoefficient === null;
     return (
-        <div className="w-full flex flex-col items-center px-4 mb-2">
-            <div className="text-xl sm:text-2xl mb-1">Previous Best:</div>
-            <div className="sm:text-lg">
-                {traditional ? "" : "Equivalent to "}
-                <span className="font-bold">{formatWeight(lift.weight, useKgs)} × {lift.reps}</span>
-                {" "}(1RM {formatWeight(lift.oneRepMax, useKgs)})
-            </div>
-            {!traditional && (lift.bodyWeight !== null || lift.addedWeight !== null) && (
-                <div className="text-sm text-stone-600">
-                    {lift.bodyWeight !== null && `Body weight ${formatWeight(lift.bodyWeight, useKgs)}`}
-                    {lift.bodyWeight !== null && lift.addedWeight !== null && ", "}
-                    {lift.addedWeight !== null && `+${formatWeight(lift.addedWeight, useKgs)} added`}
+        <div className="w-full px-4 mt-3">
+            <div className="w-full flex flex-col items-center p-3 rounded-md border-2 border-black bg-white">
+                <div className="text-sm font-semibold text-stone-600">Previous best</div>
+                <div className="text-2xl sm:text-3xl font-bold">
+                    {!traditional && <span className="text-base sm:text-lg font-normal mr-1">Equivalent to</span>}
+                    {formatWeight(lift.weight, useKgs)} × {lift.reps}
                 </div>
-            )}
-            <div className="text-sm text-stone-600">{formatLiftTime(lift.time)}</div>
+                <div className="sm:text-lg">Estimated 1RM: <span className="font-semibold">{formatWeight(lift.oneRepMax, useKgs)}</span></div>
+                {!traditional && (lift.bodyWeight !== null || lift.addedWeight !== null) && (
+                    <div className="text-sm text-stone-600">
+                        {lift.bodyWeight !== null && `Body weight ${formatWeight(lift.bodyWeight, useKgs)}`}
+                        {lift.bodyWeight !== null && lift.addedWeight !== null && ", "}
+                        {lift.addedWeight !== null && `+${formatWeight(lift.addedWeight, useKgs)} added`}
+                    </div>
+                )}
+                <div className="text-sm text-stone-600">{formatLiftTime(lift.time)}</div>
+            </div>
         </div>
     );
 }
@@ -262,43 +264,51 @@ const LiftHistory = ({ lifts, error, weightCoefficient, useKgs, accountBodyWeigh
     const [expanded, setExpanded] = useState(true);
 
     return (
-        <div className="w-full flex flex-col items-center mb-2">
+        <div className="w-full px-4 mt-3 mb-2">
+            <div className="w-full flex flex-col items-center p-3 rounded-md border-2 border-black bg-white">
 
-            <button
-                type="button"
-                className="text-xl sm:text-2xl flex items-center hover:bg-stone-400 p-1 mt-1 mb-2 rounded-md hover:cursor-pointer"
-                onClick={() => setExpanded(!expanded)}
-            >
-                Previous Lifts{lifts !== null && ` (${lifts.length})`}
-                <ArrowDown className={`ml-1 transition-[rotate] duration-300 ease-in-out ${expanded && "-rotate-180"}`} />
-            </button>
+                {/* Matches 'Equivalent Lifts' */}
+                <button
+                    type="button"
+                    aria-expanded={expanded}
+                    className="text-lg sm:text-xl font-semibold flex items-center hover:bg-stone-200 px-2 py-1 rounded-md hover:cursor-pointer"
+                    onClick={() => setExpanded(!expanded)}
+                >
+                    Previous Lifts{lifts !== null && ` (${lifts.length})`}
+                    <ArrowDown className={`ml-1 transition-[rotate] duration-300 ease-in-out ${expanded && "-rotate-180"}`} />
+                </button>
 
-            {/* Scrolls open / closed like 'Equivalent Lifts'. Kept mounted while closed, so edits in progress aren't lost. */}
-            <div className={`w-full px-4 transition-all duration-300 ease-in-out overflow-hidden ${expanded ? "max-h-128" : "max-h-0"}`}>
-                <div className={`w-full max-h-128 overflow-y-auto flex flex-col gap-2 ${expanded ? "border border-gray-500 rounded-lg p-2" : ""}`}>
-                    {error !== "" ? (
-                        <p className="text-center text-sm text-red-600">{error}</p>
-                    ) : lifts === null ? (
-                        <p className="text-center sm:text-lg">Loading lifts...</p>
-                    ) : lifts.length === 0 ? (
-                        <p className="text-center sm:text-lg">No lifts logged yet.</p>
-                    ) : (
-                        [...lifts].reverse().map((lift) => (
-                            <LiftRow
-                                key={lift.id}
-                                lift={lift}
-                                weightCoefficient={weightCoefficient}
-                                useKgs={useKgs}
-                                accountBodyWeight={accountBodyWeight}
-                                onUseInTable={onUseInTable}
-                                onUpdated={onUpdated}
-                                onDeleted={onDeleted}
-                            />
-                        ))
-                    )}
+                {/* Hidden rather than unmounted while closed, so edits in progress aren't lost */}
+                <div className={`w-full flex-col items-center ${expanded ? "flex" : "hidden"}`}>
+                    <div className="text-sm text-stone-600 mb-2">
+                        Newest first. Use a lift in the table above, or edit / delete it.
+                    </div>
+
+                    <div className="w-full max-h-128 overflow-y-auto flex flex-col gap-2 border-2 border-black p-2">
+                        {error !== "" ? (
+                            <p className="py-2 text-center text-sm text-red-600">{error}</p>
+                        ) : lifts === null ? (
+                            <p className="py-2 text-center text-sm text-stone-600">Loading lifts...</p>
+                        ) : lifts.length === 0 ? (
+                            <p className="py-2 text-center text-sm text-stone-600">No lifts logged yet.</p>
+                        ) : (
+                            [...lifts].reverse().map((lift) => (
+                                <LiftRow
+                                    key={lift.id}
+                                    lift={lift}
+                                    weightCoefficient={weightCoefficient}
+                                    useKgs={useKgs}
+                                    accountBodyWeight={accountBodyWeight}
+                                    onUseInTable={onUseInTable}
+                                    onUpdated={onUpdated}
+                                    onDeleted={onDeleted}
+                                />
+                            ))
+                        )}
+                    </div>
                 </div>
-            </div>
 
+            </div>
         </div>
     );
 }

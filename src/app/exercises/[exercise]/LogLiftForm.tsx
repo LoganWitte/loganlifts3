@@ -106,79 +106,87 @@ const LogLiftForm = ({
 
     return (
         <form
-            className="w-full flex flex-col items-center mb-1"
+            className="w-full px-4 mt-3"
             onSubmit={(e) => {
                 e.preventDefault();
                 if (formLoading) return;
                 handleLogSubmit();
             }}
         >
+            <div className="w-full flex flex-col items-center p-3 rounded-md border-2 border-black bg-white">
 
-            <LiftFieldInputs
-                values={values}
-                setValues={setValues}
-                errors={fieldErrors}
-                setErrors={setFieldErrors}
-                weightCoefficient={weightCoefficient}
-                useKgs={useKgs}
-                resetKey={resetKey}
-                idPrefix="log"
-                onChange={clearOutput}
-            />
+                <div className="text-lg sm:text-xl font-semibold mb-2">Log a lift</div>
 
-            <div className="text-xl sm:text-2xl mb-1">
-                Estimated 1RM: {oneRepMax !== undefined ? formatWeight(oneRepMax, useKgs) : "N/A"}
-            </div>
+                <LiftFieldInputs
+                    values={values}
+                    setValues={setValues}
+                    errors={fieldErrors}
+                    setErrors={setFieldErrors}
+                    weightCoefficient={weightCoefficient}
+                    useKgs={useKgs}
+                    resetKey={resetKey}
+                    idPrefix="log"
+                    onChange={clearOutput}
+                />
 
-            {/* Equivalent lift (bodyWeight + addedWeight / k), for bodyweight exercises */}
-            {!traditional && (
-                <div className="sm:text-lg mb-1">
-                    Equivalent lift: {effectiveWeight !== undefined && values.reps !== undefined
-                        ? `${formatWeight(effectiveWeight, useKgs)} × ${values.reps}`
-                        : "N/A (enter your body weight)"}
-                </div>
-            )}
-
-            {usingAccountBodyWeight && accountBodyWeight !== null && (
-                <div className="w-0 min-w-full px-4 text-xs text-stone-600 mb-1">
-                    No body weight entered, so your account body weight ({formatWeight(accountBodyWeight, useKgs)}) is used
-                    to calculate this lift. The lift itself is saved without a body weight.
-                </div>
-            )}
-
-            <div className="mt-2">
-                {sessionStatus === "loading" ? (
-                    <div className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 rounded-md border sm:border-2 border-black text-black bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait">
-                        Loading...
+                {/* Result, matching '/calculator' */}
+                <div className="w-full flex flex-col items-center mt-3 pt-3 border-t border-black">
+                    <div className="text-sm font-semibold text-stone-600">Estimated 1RM</div>
+                    <div className="text-3xl sm:text-4xl font-bold">
+                        {oneRepMax !== undefined ? formatWeight(oneRepMax, useKgs) : "N/A"}
                     </div>
-                ) : sessionStatus === "authenticated" ? (
-                    <button
-                        type="submit"
-                        className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 rounded-md border sm:border-2 border-black text-black
-                            ${formLoading ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
-                    >
-                        <BicepsFlexed className="mr-1" />
-                        Log this lift
-                    </button>
-                ) : (
-                    <Link
-                        className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 rounded-md border sm:border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
-                        href="/login"
-                    >
-                        <LogIn className="mr-1" />
-                        Sign in to log lift
-                    </Link>
-                )}
+
+                    {/* Equivalent lift (bodyWeight + addedWeight / k), for bodyweight exercises */}
+                    {!traditional && (
+                        <div className="text-sm sm:text-base text-stone-600">
+                            Equivalent lift: {effectiveWeight !== undefined && values.reps !== undefined
+                                ? `${formatWeight(effectiveWeight, useKgs)} × ${values.reps}`
+                                : "N/A (enter your body weight)"}
+                        </div>
+                    )}
+
+                    {usingAccountBodyWeight && accountBodyWeight !== null && (
+                        <div className="w-0 min-w-full px-4 text-xs text-stone-600 mt-1">
+                            No body weight entered, so your account body weight ({formatWeight(accountBodyWeight, useKgs)}) is used
+                            to calculate this lift. The lift itself is saved without a body weight.
+                        </div>
+                    )}
+
+                    <div className="mt-3">
+                        {sessionStatus === "loading" ? (
+                            <div className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 px-6 rounded-md border-2 border-black text-black bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait">
+                                Loading...
+                            </div>
+                        ) : sessionStatus === "authenticated" ? (
+                            <button
+                                type="submit"
+                                className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 px-6 rounded-md border-2 border-black text-black
+                                    ${formLoading ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
+                            >
+                                <BicepsFlexed className="mr-2" />
+                                Log this lift
+                            </button>
+                        ) : (
+                            <Link
+                                className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 px-6 rounded-md border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+                                href="/login"
+                            >
+                                <LogIn className="mr-2" />
+                                Sign in to log lift
+                            </Link>
+                        )}
+                    </div>
+
+                    {logOutput.length > 0 && (
+                        <ul className={`w-0 min-w-full flex flex-col items-center text-sm mt-1 ${logOutputColor === "red" ? "text-red-600" : logOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                            {logOutput.map((output, i) => {
+                                return <li key={i} className="mx-4">{output}</li>
+                            })}
+                        </ul>
+                    )}
+                </div>
+
             </div>
-
-            {logOutput.length > 0 && (
-                <ul className={`w-0 min-w-full flex flex-col items-center text-sm mt-1 ${logOutputColor === "red" ? "text-red-600" : logOutputColor === "green" ? "text-green-600" : "text-black"}`}>
-                    {logOutput.map((output, i) => {
-                        return <li key={i} className="mx-4">{output}</li>
-                    })}
-                </ul>
-            )}
-
         </form>
     );
 }

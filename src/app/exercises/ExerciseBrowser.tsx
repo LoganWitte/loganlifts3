@@ -2,22 +2,30 @@
 
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from 'next/link';
-import { ArrowUpWideNarrow, ArrowDownWideNarrow, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { BODY_PART_OPTIONS, CATEGORY_OPTIONS, type Exercise } from "@/lib/models";
 import ExerciseCard, { type CalculatorParams } from "./ExerciseCard";
 import { useExerciseContext } from "@/app/components/contextProviders/ExerciseProvider";
+import Pagination, { getPageCount, MAX_PER_PAGE } from "@/app/components/Pagination";
 
-// Number of exercises shown at once, and how many are added / removed by the show more / fewer arrows
-const EXERCISES_STEP = 4;
-const DEFAULT_MAX_EXERCISES = 12;
+// Number of exercises shown per page by default
+const DEFAULT_PER_PAGE = 12;
 
 // Search param keys used to save filters in the URL
 const SEARCH_PARAM = "search";
 const CATEGORY_PARAM = "category";
 const BODY_PART_PARAM = "bodyPart";
 const MINE_PARAM = "mine";
+const PAGE_PARAM = "page";
+const PER_PAGE_PARAM = "perPage";
+
+// Parses a positive whole number search param, or returns the fallback if missing / invalid
+function parsePositiveIntParam(value: string | null, fallback: number, max: number): number {
+    const parsed = value === null ? NaN : parseInt(value);
+    return (isNaN(parsed) || parsed < 1) ? fallback : Math.min(parsed, max);
+}
 
 const Page = () => {
 
@@ -36,13 +44,14 @@ const Page = () => {
     const [category, setCategory] = useState((paramCategory !== null && CATEGORY_OPTIONS.includes(paramCategory)) ? paramCategory : CATEGORY_OPTIONS[0]);
     const [bodyPart, setBodyPart] = useState((paramBodyPart !== null && BODY_PART_OPTIONS.includes(paramBodyPart)) ? paramBodyPart : BODY_PART_OPTIONS[0]);
     const [mineOnly, setMineOnly] = useState(searchParams.get(MINE_PARAM) === "true");
-    const [maxExercises, setMaxExercises] = useState(DEFAULT_MAX_EXERCISES);
+    // Pagination (1-based page). Reset to the first page whenever a filter changes.
+    const [page, setPage] = useState(parsePositiveIntParam(searchParams.get(PAGE_PARAM), 1, Number.MAX_SAFE_INTEGER));
+    const [perPage, setPerPage] = useState(parsePositiveIntParam(searchParams.get(PER_PAGE_PARAM), DEFAULT_PER_PAGE, MAX_PER_PAGE));
 
     // Pulls & sanitizes calculator values from searchParams (e.g. from '/calculator'), passed through to exercise pages
     const calculatorParams: CalculatorParams = useMemo(() => {
         const weightParam = searchParams.get('weight');
         const repsParam = searchParams.get('reps');
-        const useKgsParam = searchParams.get('useKgs');
 
         let weight: number | undefined = weightParam === null ? undefined : parseFloat(weightParam);
         let reps: number | undefined = repsParam === null ? undefined : parseInt(repsParam);
@@ -52,9 +61,8 @@ const Page = () => {
         if (reps !== undefined) {
             reps = isNaN(reps) ? undefined : Math.max(reps, 0);
         }
-        const useKgs = useKgsParam === "true" ? true : useKgsParam === "false" ? false : undefined;
 
-        return { weight, reps, useKgs };
+        return { weight, reps };
     }, [searchParams]);
 
     // Saves filters to URL (without adding history entries), preserving any other params (e.g. calculator values)
@@ -70,11 +78,13 @@ const Page = () => {
         setOrDelete(CATEGORY_PARAM, category !== CATEGORY_OPTIONS[0] ? category : null);
         setOrDelete(BODY_PART_PARAM, bodyPart !== BODY_PART_OPTIONS[0] ? bodyPart : null);
         setOrDelete(MINE_PARAM, mineOnly ? "true" : null);
+        setOrDelete(PAGE_PARAM, page !== 1 ? String(page) : null);
+        setOrDelete(PER_PAGE_PARAM, perPage !== DEFAULT_PER_PAGE ? String(perPage) : null);
 
         const query = params.toString();
         if (query === searchParams.toString()) return;
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    }, [searchQuery, category, bodyPart, mineOnly, searchParams, pathname, router]);
+    }, [searchQuery, category, bodyPart, mineOnly, page, perPage, searchParams, pathname, router]);
 
     // Pulls exercises from context. 'storedExercises' is null until the first fetch completes,
     // otherwise it holds the most recent data (possibly from a previous visit) while refreshing.
@@ -103,24 +113,23 @@ const Page = () => {
         );
     }, [exercises, searchQuery, category, bodyPart, mineOnly, status]);
 
-    const shownCount = Math.min(maxExercises, filteredExercises.length);
+    // Clamps the page to the available pages (e.g. after results shrink), without changing the saved page
+    const pageCount = getPageCount(filteredExercises.length, perPage);
+    const currentPage = Math.min(page, pageCount);
+    const pageExercises = filteredExercises.slice((currentPage - 1) * perPage, currentPage * perPage);
 
-    function showMore() {
-        if (maxExercises < filteredExercises.length) {
-            setMaxExercises(maxExercises + EXERCISES_STEP);
-        }
+    // Changing the page size keeps the first visible exercise on screen
+    function handlePerPageChange(newPerPage: number) {
+        const firstIndex = (currentPage - 1) * perPage;
+        setPerPage(newPerPage);
+        setPage(Math.floor(firstIndex / newPerPage) + 1);
     }
 
-    function showFewer() {
-        // Snaps down to the nearest step below the number of results, if showing all results
-        if (maxExercises > filteredExercises.length) {
-            setMaxExercises(Math.max(EXERCISES_STEP, filteredExercises.length % EXERCISES_STEP === 0
-                ? filteredExercises.length - EXERCISES_STEP
-                : filteredExercises.length - filteredExercises.length % EXERCISES_STEP));
-        }
-        else {
-            setMaxExercises(Math.max(EXERCISES_STEP, maxExercises - EXERCISES_STEP));
-        }
+    // The bottom controls also scroll back up to the top of the results
+    const resultsRef = useRef<HTMLDivElement>(null);
+    function handleBottomPageChange(newPage: number) {
+        setPage(newPage);
+        resultsRef.current?.scrollIntoView({ block: "start" });
     }
 
     return (
@@ -141,7 +150,7 @@ const Page = () => {
                     value={searchQuery}
                     onChange={(e) => {
                         setSearchQuery(e.target.value);
-                        setMaxExercises(DEFAULT_MAX_EXERCISES);
+                        setPage(1);
                     }}
                 />
 
@@ -152,7 +161,7 @@ const Page = () => {
                         value={category}
                         onChange={(e) => {
                             setCategory(e.target.value);
-                            setMaxExercises(DEFAULT_MAX_EXERCISES);
+                            setPage(1);
                         }}
                     >
                         {CATEGORY_OPTIONS.map((option) => {
@@ -166,7 +175,7 @@ const Page = () => {
                         value={bodyPart}
                         onChange={(e) => {
                             setBodyPart(e.target.value);
-                            setMaxExercises(DEFAULT_MAX_EXERCISES);
+                            setPage(1);
                         }}
                     >
                         {BODY_PART_OPTIONS.map((option) => {
@@ -185,40 +194,26 @@ const Page = () => {
                                 checked={mineOnly}
                                 onChange={(e) => {
                                     setMineOnly(e.target.checked);
-                                    setMaxExercises(DEFAULT_MAX_EXERCISES);
+                                    setPage(1);
                                 }}
                             />
                             Show only my exercises
                         </label>
                     ) : <div />}
 
-                    <div className="flex flex-row items-center rounded-md border-2 border-black bg-white px-2">
-                        <span className="select-none">
-                            Results: {shownCount} / {filteredExercises.length}
-                        </span>
-                        <button
-                            type="button"
-                            title="Show more"
-                            className="ml-2 p-1 rounded-full hover:bg-stone-300 hover:cursor-pointer"
-                            onClick={showMore}
-                        >
-                            <ArrowUpWideNarrow size={24} />
-                        </button>
-                        <button
-                            type="button"
-                            title="Show fewer"
-                            className="p-1 rounded-full hover:bg-stone-300 hover:cursor-pointer"
-                            onClick={showFewer}
-                        >
-                            <ArrowDownWideNarrow size={24} />
-                        </button>
-                    </div>
+                    <Pagination
+                        page={currentPage}
+                        setPage={setPage}
+                        perPage={perPage}
+                        setPerPage={handlePerPageChange}
+                        total={filteredExercises.length}
+                    />
 
                 </div>
             </div>
 
             {/* Results */}
-            <div className="w-full px-4 mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div ref={resultsRef} className="scroll-mt-4 w-full px-4 mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* Previous data (if any) is displayed while refreshing */}
                 {storedExercises === null && fetchError === "" ? (
                     <p className="col-span-full text-center text-lg font-semibold">
@@ -237,11 +232,24 @@ const Page = () => {
                         No exercises match these filters.
                     </p>
                 ) : (
-                    filteredExercises.slice(0, maxExercises).map((exercise) => (
+                    pageExercises.map((exercise) => (
                         <ExerciseCard key={exercise.id} exercise={exercise} calculatorParams={calculatorParams} />
                     ))
                 )}
             </div>
+
+            {/* Bottom page controls, so the next page can be reached without scrolling back up */}
+            {pageCount > 1 && (
+                <div className="flex flex-row justify-center w-full px-4 mt-3">
+                    <Pagination
+                        page={currentPage}
+                        setPage={handleBottomPageChange}
+                        perPage={perPage}
+                        setPerPage={handlePerPageChange}
+                        total={filteredExercises.length}
+                    />
+                </div>
+            )}
 
             {/* Failed refresh while previous data is displayed */}
             {storedExercises !== null && fetchError !== "" && (
@@ -253,7 +261,7 @@ const Page = () => {
             {/* Create exercise link */}
             <Link
                 href="/exercises/add"
-                className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-4 mb-1 rounded-md border-2 border-black text-black w-full sm:w-fit sm:px-6
+                className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-4 mb-1 rounded-md border-2 border-black text-black w-fit max-w-full sm:px-6
                     bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
             >
                 <Plus className="ml-2 mr-4 sm:ml-0" />

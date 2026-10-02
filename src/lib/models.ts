@@ -160,6 +160,11 @@ export const PRIVACY_SETTING_KEYS = ["profilePublic", "profilePhotoPublic", "bio
 // Request body for '/api/account/privacy'. Any subset of the flags; omitted flags keep their current values.
 export type UpdatePrivacyRequest = Partial<PrivacySettings>;
 
+// Request body for '/api/account/preferences/useKgs'. Sets the user's preferred unit (User 'prefersKgs').
+export type UpdateUnitPreferenceRequest = {
+    useKgs: boolean,            // true for kilograms, false for pounds
+};
+
 // One user as returned by '/api/users/get'. Fields are null when private or unset.
 // Built only by 'toPublicProfileSummary' (lib/profileServer.ts), which applies every privacy rule.
 export type PublicProfileSummary = {

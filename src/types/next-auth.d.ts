@@ -14,6 +14,7 @@ declare module 'next-auth' {
       bioPublic?: boolean
       bodyWeightPublic?: boolean
       liftsPublic?: boolean
+      prefersKgs?: boolean
     } & DefaultSession['user']
   }
 }

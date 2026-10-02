@@ -186,6 +186,7 @@ const config = {
                         bioPublic: true,
                         bodyWeightPublic: true,
                         liftsPublic: true,
+                        prefersKgs: true,
                     },
                 })
 
@@ -204,6 +205,8 @@ const config = {
                 session.user.bioPublic = user?.bioPublic ?? true
                 session.user.bodyWeightPublic = user?.bodyWeightPublic ?? false
                 session.user.liftsPublic = user?.liftsPublic ?? false
+                // Preferred unit, defaulting to pounds (the database default). Used by 'UnitProvider'.
+                session.user.prefersKgs = user?.prefersKgs ?? false
             }
 
             session.provider = token.provider as string | undefined

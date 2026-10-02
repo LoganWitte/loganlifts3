@@ -77,110 +77,127 @@ const EquivalentLifts = ({
         return added >= 0 ? formatWeight(added, useKgs) : "—";
     }
 
-    const columnWidth = showAddedWeight ? "w-[33.33%]" : "w-[50%]";
+    const columnWidth = showAddedWeight ? "w-1/3" : "w-1/2";
+
+    // Shared input style, matching '/calculator'
+    const inputClass = "p-1 rounded-md border-2 border-black bg-white";
 
     return (
-        <div className="min-w-80 w-fit flex flex-col items-center mb-2">
+        <div className="w-full px-4 mt-3 mb-2">
+            <div className="w-full flex flex-col items-center p-3 rounded-md border-2 border-black bg-white">
 
-            <button
-                type="button"
-                className="text-xl sm:text-2xl flex items-center hover:bg-stone-400 p-1 mt-1 mb-2 rounded-md hover:cursor-pointer"
-                onClick={() => setExpanded(!expanded)}
-            >
-                Equivalent Lifts
-                <ArrowDown className={`ml-1 transition-[rotate] duration-300 ease-in-out ${expanded && "-rotate-180"}`} />
-            </button>
+                <button
+                    type="button"
+                    aria-expanded={expanded}
+                    className="text-lg sm:text-xl font-semibold flex items-center hover:bg-stone-200 px-2 py-1 rounded-md hover:cursor-pointer"
+                    onClick={() => setExpanded(!expanded)}
+                >
+                    Equivalent Lifts
+                    <ArrowDown className={`ml-1 transition-[rotate] duration-300 ease-in-out ${expanded && "-rotate-180"}`} />
+                </button>
 
-            <div className={`w-full flex flex-col gap-1 sm:text-lg items-center px-4 transition-all ease-in-out duration-300 overflow-hidden ${!expanded ? "max-h-0" : "max-h-64"}`}>
-
-                <div className="flex flex-row items-center">
-                    <label htmlFor="table-one-rep-max" className="font-semibold mr-2 text-lg sm:text-xl">1RM {useKgs ? "(kgs)" : "(lbs)"}:</label>
-                    <input
-                        type="number" id="table-one-rep-max" min="0" step="any"
-                        value={oneRepMaxText}
-                        className="bg-gray-300 border border-black p-1 w-24 rounded-md"
-                        onChange={handleOneRepMaxChange}
-                        onFocus={() => { oneRepMaxFocused.current = true; }}
-                        onBlur={() => {
-                            oneRepMaxFocused.current = false;
-                            setOneRepMaxText(oneRepMax !== undefined ? String(toDisplayWeight(oneRepMax, useKgs)) : "");
-                        }}
-                    />
-                    {overrideOneRepMax !== null && (
-                        <button
-                            type="button"
-                            title={`Reset to ${autoSourceLabel}`}
-                            className="ml-1 p-1 rounded-full opacity-75 hover:opacity-100 hover:bg-stone-400 hover:cursor-pointer"
-                            onClick={() => setOverrideOneRepMax(null)}
-                        >
-                            <RotateCcw size={20} />
-                        </button>
-                    )}
-                </div>
-
-                <div className="text-xs text-stone-600">
-                    {overrideOneRepMax !== null ? "Custom 1RM." : `From ${autoSourceLabel}.`}
-                </div>
-
-                <div className="flex flex-row items-center">
-                    <label htmlFor="table-formula" className="font-semibold mr-2 text-lg sm:text-xl">Formula:</label>
-                    <select
-                        value={formula}
-                        id="table-formula"
-                        onChange={(e) => {
-                            if (FORMULA_OPTIONS.includes(e.target.value as allowedFormula)) {
-                                setFormula(e.target.value as allowedFormula);
-                            }
-                        }}
-                        className="bg-gray-300 border border-black p-1 rounded-md"
-                    >
-                        <option value="Recommended">Recommended</option>
-                        <option value="Brzycki">Brzycki</option>
-                        <option value="Epley">Epley</option>
-                        <option value="Lombardi">Lombardi</option>
-                        <option value="OConnor">O&apos;Connor</option>
-                    </select>
-                    <Link href="/calculator/info">
-                        <CircleQuestionMark className="ml-1 opacity-75 hover:opacity-100 hover:cursor-pointer" />
-                    </Link>
-                </div>
-
-                <div className="flex flex-row items-center">
-                    <div className="font-semibold mr-2 text-lg sm:text-xl">Rep range:</div>
-                    <input
-                        type="number" id="lowerLimit" name="lowerLimit" min="1" max={(upperLimit === undefined || isNaN(upperLimit)) ? 10000 : upperLimit - 1} step="1" value={lowerLimit ?? ""}
-                        className="bg-gray-300 border sm:border border-black p-1 w-12 h-fit text-sm rounded-md"
-                        onChange={handleLowerLimitChange}
-                    />
-                    <MoveHorizontal className="mx-1" />
-                    <input
-                        type="number" id="upperLimit" name="upperLimit" min={(lowerLimit === undefined || isNaN(lowerLimit)) ? 1 : lowerLimit + 1} max="10000" step="1" value={upperLimit ?? ""}
-                        className="bg-gray-300 border sm:border border-black p-1 w-12 h-fit text-sm rounded-md"
-                        onChange={handleUpperLimitChange}
-                    />
-                </div>
-            </div>
-
-            <div className={`w-full ${expanded ? "max-h-60 border border-gray-500 mt-2 mb-1" : "max-h-0 border-none mt-0 mb-0"} transition-all duration-300 ease-in-out overflow-y-auto flex flex-col sm:text-lg`}>
-                <div className="flex flex-row justify-between text-lg border-gray-500 sm:text-xl font-semibold">
-                    <div className={`${columnWidth} text-center border-r border-gray-500`}>Reps</div>
-                    <div className={`${columnWidth} text-center ${showAddedWeight ? "border-r border-gray-500" : ""}`}>
-                        {weightCoefficient === null ? "Weight" : "Equivalent"}
+                {expanded && <>
+                    <div className="text-sm text-stone-600 mb-2">
+                        Estimated {weightCoefficient === null ? "weight" : "equivalent weight"} for each rep count, based on a 1RM.
                     </div>
-                    {showAddedWeight && <div className={`${columnWidth} text-center`}>Added</div>}
-                </div>
-                {equivalents
-                    .filter((equivalent): equivalent is { reps: number, weight: number } => equivalent.weight !== undefined)
-                    .map((equivalent) => (
-                        <div key={equivalent.reps} className="w-full flex flex-row justify-between border-t border-gray-500">
-                            <div className={`${columnWidth} text-center border-r border-gray-500`}>{equivalent.reps}</div>
-                            <div className={`${columnWidth} text-center ${showAddedWeight ? "border-r border-gray-500" : ""}`}>{formatWeight(equivalent.weight, useKgs)}</div>
-                            {showAddedWeight && <div className={`${columnWidth} text-center`}>{formatAddedWeight(equivalent.weight)}</div>}
-                        </div>
-                    ))
-                }
-            </div>
 
+                    <div className="flex flex-row flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-2">
+
+                        <div className="flex flex-col items-center">
+                            <div className="flex flex-row items-center gap-2">
+                                <label htmlFor="table-one-rep-max" className="font-semibold">1RM ({useKgs ? "kgs" : "lbs"}):</label>
+                                <input
+                                    type="number" id="table-one-rep-max" min="0" step="any"
+                                    value={oneRepMaxText}
+                                    className={`${inputClass} w-24`}
+                                    onChange={handleOneRepMaxChange}
+                                    onFocus={() => { oneRepMaxFocused.current = true; }}
+                                    onBlur={() => {
+                                        oneRepMaxFocused.current = false;
+                                        setOneRepMaxText(oneRepMax !== undefined ? String(toDisplayWeight(oneRepMax, useKgs)) : "");
+                                    }}
+                                />
+                                {overrideOneRepMax !== null && (
+                                    <button
+                                        type="button"
+                                        title={`Reset to ${autoSourceLabel}`}
+                                        aria-label={`Reset to ${autoSourceLabel}`}
+                                        className="p-1 rounded-full opacity-75 hover:opacity-100 hover:bg-stone-200 hover:cursor-pointer"
+                                        onClick={() => setOverrideOneRepMax(null)}
+                                    >
+                                        <RotateCcw size={20} />
+                                    </button>
+                                )}
+                            </div>
+                            <div className="text-xs text-stone-600">
+                                {overrideOneRepMax !== null ? "Custom 1RM." : `From ${autoSourceLabel}.`}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-row items-center gap-2">
+                            <label htmlFor="table-formula" className="font-semibold">Formula:</label>
+                            <select
+                                value={formula}
+                                id="table-formula"
+                                onChange={(e) => {
+                                    if (FORMULA_OPTIONS.includes(e.target.value as allowedFormula)) {
+                                        setFormula(e.target.value as allowedFormula);
+                                    }
+                                }}
+                                className={`${inputClass} hover:cursor-pointer`}
+                            >
+                                <option value="Recommended">Recommended</option>
+                                <option value="Brzycki">Brzycki</option>
+                                <option value="Epley">Epley</option>
+                                <option value="Lombardi">Lombardi</option>
+                                <option value="OConnor">O&apos;Connor</option>
+                            </select>
+                            <Link href="/calculator/info" title="How the formulas work" aria-label="How the formulas work">
+                                <CircleQuestionMark size={20} className="opacity-75 hover:opacity-100 hover:cursor-pointer" />
+                            </Link>
+                        </div>
+
+                        <div className="flex flex-row items-center gap-2">
+                            <span className="font-semibold">Rep range:</span>
+                            <input
+                                type="number" id="lowerLimit" name="lowerLimit" aria-label="Lowest rep count" min="1" max={(upperLimit === undefined || isNaN(upperLimit)) ? 10000 : upperLimit - 1} step="1" value={lowerLimit ?? ""}
+                                className={`${inputClass} w-16 text-center`}
+                                onChange={handleLowerLimitChange}
+                            />
+                            <MoveHorizontal />
+                            <input
+                                type="number" id="upperLimit" name="upperLimit" aria-label="Highest rep count" min={(lowerLimit === undefined || isNaN(lowerLimit)) ? 1 : lowerLimit + 1} max="10000" step="1" value={upperLimit ?? ""}
+                                className={`${inputClass} w-16 text-center`}
+                                onChange={handleUpperLimitChange}
+                            />
+                        </div>
+
+                    </div>
+
+                    <div className={`w-full ${showAddedWeight ? "sm:w-[32rem]" : "sm:w-96"} max-h-80 overflow-y-auto border-2 border-black sm:text-lg`}>
+                        <div className="sticky top-0 flex flex-row font-semibold bg-slate-200 border-b-2 border-black">
+                            <div className={`${columnWidth} py-1 text-center border-r border-black`}>Reps</div>
+                            <div className={`${columnWidth} py-1 text-center ${showAddedWeight ? "border-r border-black" : ""}`}>
+                                {weightCoefficient === null ? "Weight" : "Equivalent"}
+                            </div>
+                            {showAddedWeight && <div className={`${columnWidth} py-1 text-center`}>Added</div>}
+                        </div>
+                        {equivalents.length === 0 ? (
+                            <div className="py-2 text-center text-sm text-stone-600">Enter a 1RM & a valid rep range.</div>
+                        ) : equivalents
+                            .filter((equivalent): equivalent is { reps: number, weight: number } => equivalent.weight !== undefined)
+                            .map((equivalent) => (
+                                <div key={equivalent.reps} className="flex flex-row border-b border-black last:border-b-0">
+                                    <div className={`${columnWidth} py-0.5 text-center border-r border-black`}>{equivalent.reps}</div>
+                                    <div className={`${columnWidth} py-0.5 text-center ${showAddedWeight ? "border-r border-black" : ""}`}>{formatWeight(equivalent.weight, useKgs)}</div>
+                                    {showAddedWeight && <div className={`${columnWidth} py-0.5 text-center`}>{formatAddedWeight(equivalent.weight)}</div>}
+                                </div>
+                            ))
+                        }
+                    </div>
+                </>}
+
+            </div>
         </div>
     );
 }

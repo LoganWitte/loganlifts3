@@ -7,12 +7,13 @@ import { useSession } from 'next-auth/react';
 import { allowedFormula, getOneRepMax, getWeight, poundsToKgs, kgsToPounds } from '@/lib/formulas';
 import { CircleQuestionMark, BicepsFlexed, LogIn, ArrowDown, MoveHorizontal } from 'lucide-react'
 import UnitToggle from '@/app/components/UnitToggle';
+import { useUnitContext } from '@/app/components/contextProviders/UnitProvider';
 
 // Must mirror 'allowedFormula' from 'lib/formulas.ts':
 // "Recommended" | "Brzycki" | "Epley" | "Lombardi" | "OConnor";
 const FORMULA_OPTIONS: allowedFormula[] = ["Recommended", "Brzycki", "Epley", "Lombardi", "OConnor"];
 
-// Reads the URL via useSearchParams (needed to persist the pound/kilogram toggle across refreshes/
+// Reads the URL via useSearchParams (needed to persist weight & reps across refreshes/
 // navigation), so it's wrapped in Suspense below.
 const CalculatorContent = () => {
 
@@ -29,7 +30,8 @@ const CalculatorContent = () => {
     const defaultReps = 5;
     const defaultFormula: allowedFormula = "Recommended";
 
-    const [useKgs, setUseKgs] = useState(searchParams.get('useKgs') === 'true');
+    // Displayed unit, shared across pages & initialized from the user's preference ('UnitProvider')
+    const { useKgs, setUseKgs } = useUnitContext();
     // Weight is stored internally as a single full-precision pounds value, independent of the displayed unit.
     // Toggling units only flips 'useKgs' and never touches this value, so converting back and forth repeatedly
     // can't compound rounding error the way converting-then-storing-then-reconverting would.
@@ -71,7 +73,7 @@ const CalculatorContent = () => {
         return roundWeight(useKgs ? poundsToKgs(weightLbs) : weightLbs);
     }, [weightLbs, useKgs]);
 
-    // Persists one or more values to the URL (without adding a history entry), so unit/weight/reps all
+    // Persists one or more values to the URL (without adding a history entry), so weight/reps
     // survive a refresh or revisit. An empty string is a valid value here (see 'parseInitial' above) - it's
     // how a cleared field is distinguished from a param that was never set.
     function updateSearchParams(updates: Record<string, string>) {
@@ -85,7 +87,6 @@ const CalculatorContent = () => {
     // Flips the displayed unit without touching the underlying canonical weight value.
     function handleUnitToggle(newUseKgs: boolean) {
         setUseKgs(newUseKgs);
-        updateSearchParams({ useKgs: String(newUseKgs) });
     }
 
     // A negative, empty, or otherwise invalid field clears the value (rather than falling back to 0 or
@@ -153,140 +154,170 @@ const CalculatorContent = () => {
         setUpperLimit((isNaN(value) || value < 0) ? undefined : value);
     }
 
-    return (
-        <div className="flex flex-col items-center justify-center text-center p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160">
+    // Shared styles, matching inputs & cards elsewhere in this project (e.g. '/exercises')
+    const inputClass = "w-full p-2 rounded-md border-2 border-black text-black bg-white";
+    const cardClass = "w-full flex flex-col items-center p-3 rounded-md border-2 border-black bg-white";
+    const unit = useKgs ? "kg" : "lb";
 
-            <div className="flex flex-row justify-center text-xl sm:text-2xl font-semibold mb-2">
+    return (
+        <div className="flex flex-col items-center justify-center text-center p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160 sm:w-[60vw]">
+
+            <div className="flex flex-row justify-center text-xl sm:text-2xl font-semibold mb-1">
                 Lift Calculator
+            </div>
+
+            <div className="text-sm text-stone-600 mx-4 mb-3">
+                Estimate your one-rep max from any set, and see what you could lift for other rep counts.
             </div>
 
             <UnitToggle falseString="Pounds" trueString="Kilograms" value={useKgs} setValue={handleUnitToggle} />
 
-            <div className="sm:min-w-96 w-fit flex flex-col mx-4 mb-2 gap-1">
-                <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                    <label htmlFor="weight" className="font-bold sm:text-lg">Weight {useKgs ? "(kgs)" : "(lbs)"}:</label>
+            {/* Inputs */}
+            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 px-4 text-left">
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="weight" className="font-semibold sm:text-lg">Weight ({useKgs ? "kgs" : "lbs"})</label>
                     <input
                         key={useKgs ? "kg" : "lb"}
                         type="number" id="weight" name="weight" min="1" step="1" defaultValue={displayWeight ?? ""}
-                        className="bg-gray-300 border border-black p-1 ml-1 w-30 rounded-md"
+                        className={inputClass}
                         onChange={handleWeightChange}
                         onBlur={handleWeightBlur}
                     />
                 </div>
 
-                <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                    <label htmlFor="reps" className="font-bold sm:text-lg">Reps:</label>
+                <div className="flex flex-col gap-1">
+                    <label htmlFor="reps" className="font-semibold sm:text-lg">Reps</label>
                     <input
                         type="number" id="reps" name="reps" min="1" step="1" defaultValue={reps ?? ""}
-                        className="bg-gray-300 border border-black p-1 ml-1 w-30 rounded-md"
+                        className={inputClass}
                         onChange={handleRepsChange}
                         onBlur={handleRepsBlur}
                     />
                 </div>
 
-                <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                    <label htmlFor="formula" className="font-bold sm:text-lg mr-6">Formula:</label>
-                    <div className="flex flex-row items-center">
-                        <select
-                            value={formula}
-                            id="formula"
-                            onChange={(e) => {
-                                if (FORMULA_OPTIONS.includes(e.target.value as allowedFormula)) {
-                                    setFormula(e.target.value as allowedFormula);
-                                }
-                            }}
-                            className="bg-gray-300 border border-black p-1 ml-1 rounded-md"
-                        >
-                            <option value="Recommended">Recommended</option>
-                            <option value="Brzycki">Brzycki</option>
-                            <option value="Epley">Epley</option>
-                            <option value="Lombardi">Lombardi</option>
-                            <option value="OConnor">O&apos;Connor</option>
-                        </select>
-                        <Link href="/calculator/info">
-                            <CircleQuestionMark className="ml-1 opacity-75 hover:opacity-100 hover:cursor-pointer" />
+                <div className="flex flex-col gap-1">
+                    <div className="flex flex-row items-center gap-1">
+                        <label htmlFor="formula" className="font-semibold sm:text-lg">Formula</label>
+                        <Link href="/calculator/info" title="How the formulas work" aria-label="How the formulas work">
+                            <CircleQuestionMark size={20} className="opacity-75 hover:opacity-100 hover:cursor-pointer" />
                         </Link>
                     </div>
+                    <select
+                        value={formula}
+                        id="formula"
+                        onChange={(e) => {
+                            if (FORMULA_OPTIONS.includes(e.target.value as allowedFormula)) {
+                                setFormula(e.target.value as allowedFormula);
+                            }
+                        }}
+                        className={`${inputClass} hover:cursor-pointer`}
+                    >
+                        <option value="Recommended">Recommended</option>
+                        <option value="Brzycki">Brzycki</option>
+                        <option value="Epley">Epley</option>
+                        <option value="Lombardi">Lombardi</option>
+                        <option value="OConnor">O&apos;Connor</option>
+                    </select>
                 </div>
             </div>
 
-            <div className="w-full flex flex-col items-center mb-1">
-                <div className="text-xl sm:text-2xl mb-3">
-                    Estimated 1RM: {oneRepMax !== undefined ? oneRepMax.toFixed(2) : "N/A"}{oneRepMax !== undefined && (useKgs ? "kg" : "lb")}
-                </div>
+            {/* Result */}
+            <div className="w-full px-4 mt-3">
+                <div className={cardClass}>
+                    <div className="text-sm font-semibold text-stone-600">Estimated 1RM</div>
+                    <div className="text-3xl sm:text-4xl font-bold mb-3">
+                        {oneRepMax !== undefined ? `${oneRepMax.toFixed(2)}${unit}` : "N/A"}
+                    </div>
 
-                {status === "loading" ? (
-                    <div className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 rounded-md border sm:border-2 border-black text-black bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait">
-                        Loading...
-                    </div>
-                ) : oneRepMax === undefined ? (
-                    <div className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 rounded-md border sm:border-2 border-black text-black bg-gray-400 opacity-60 hover:cursor-not-allowed">
-                        <BicepsFlexed className="mr-1" />
-                        Enter weight &amp; reps to log
-                    </div>
-                ) : status === "authenticated" ? (
-                    <Link
-                        className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 rounded-md border sm:border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
-                        href={`/exercises?weight=${weightLbs}&reps=${reps}&useKgs=${useKgs}`}
-                    >
-                        <BicepsFlexed className="mr-1" />
-                        Log this lift
-                    </Link>
-                ) : (
-                    <Link
-                        className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 rounded-md border sm:border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
-                        href="/login"
-                    >
-                        <LogIn className="mr-1" />
-                        Sign in to log lift
-                    </Link>
-                )}
+                    {status === "loading" ? (
+                        <div className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 px-6 rounded-md border-2 border-black text-black bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait">
+                            Loading...
+                        </div>
+                    ) : oneRepMax === undefined ? (
+                        <div className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 px-6 rounded-md border-2 border-black text-stone-600 bg-stone-300 hover:cursor-not-allowed">
+                            <BicepsFlexed className="mr-2" />
+                            Enter weight &amp; reps to log
+                        </div>
+                    ) : status === "authenticated" ? (
+                        <Link
+                            className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 px-6 rounded-md border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+                            href={`/exercises?weight=${weightLbs}&reps=${reps}`}
+                        >
+                            <BicepsFlexed className="mr-2" />
+                            Log this lift
+                        </Link>
+                    ) : (
+                        <Link
+                            className="flex flex-row items-center justify-center sm:text-lg font-medium p-2 px-6 rounded-md border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+                            href="/login"
+                        >
+                            <LogIn className="mr-2" />
+                            Sign in to log lift
+                        </Link>
+                    )}
+                </div>
             </div>
 
-            <div className="min-w-80 w-fit flex flex-col items-center mb-2">
+            {/* Equivalent lifts */}
+            <div className="w-full px-4 mt-3">
+                <div className={cardClass}>
 
-                <button
-                    type="button"
-                    className="text-xl sm:text-2xl flex items-center hover:bg-stone-400 p-1 mt-1 mb-2 rounded-md hover:cursor-pointer"
-                    onClick={() => setExpanded(!expanded)}
-                >
-                    Equivalent Lifts
-                    <ArrowDown className={`ml-1 transition-[rotate] duration-300 ease-in-out ${expanded && "-rotate-180"}`} />
-                </button>
+                    <button
+                        type="button"
+                        aria-expanded={expanded}
+                        className="text-lg sm:text-xl font-semibold flex items-center hover:bg-stone-200 px-2 py-1 rounded-md hover:cursor-pointer"
+                        onClick={() => setExpanded(!expanded)}
+                    >
+                        Equivalent Lifts
+                        <ArrowDown className={`ml-1 transition-[rotate] duration-300 ease-in-out ${expanded && "-rotate-180"}`} />
+                    </button>
 
-                <div className={`w-full flex flex-row sm:text-lg justify-center items-center px-4 transition-all ease-in-out duration-300 overflow-hidden ${!expanded ? "max-h-0" : "max-h-64"}`}>
-                    <div className="font-semibold mr-2 text-lg sm:text-xl">Rep range:</div>
-                    <div className="flex items-center">
-                        <input
-                            type="number" id="lowerLimit" name="lowerLimit" min="1" max={(upperLimit === undefined || isNaN(upperLimit)) ? 10000 : upperLimit - 1} step="1" value={lowerLimit ?? ""}
-                            className="bg-gray-300 border sm:border border-black p-1 w-12 h-fit text-sm rounded-md"
-                            onChange={handleLowerLimitChange}
-                        />
-                        <MoveHorizontal className="mx-1" />
-                        <input
-                            type="number" id="upperLimit" name="upperLimit" min={(lowerLimit === undefined || isNaN(lowerLimit)) ? 1 : lowerLimit + 1} max="10000" step="1" value={upperLimit ?? ""}
-                            className="bg-gray-300 border sm:border border-black p-1 w-12 h-fit text-sm rounded-md"
-                            onChange={handleUpperLimitChange}
-                        />
-                    </div>
-                </div>
+                    {expanded && <>
+                        <div className="text-sm text-stone-600 mb-2">
+                            Estimated weight for each rep count, based on your 1RM.
+                        </div>
 
-                <div className={`w-full ${expanded ? "max-h-60 border border-gray-500 mt-2 mb-1" : "max-h-0 border-none mt-0 mb-0"} transition-all duration-300 ease-in-out overflow-y-auto flex flex-col sm:text-lg`}>
-                    <div className="flex flex-row justify-between text-lg border-gray-500 sm:text-xl font-semibold">
-                        <div className="w-[50%] text-center border-r border-gray-500">Reps</div>
-                        <div className="w-[50%] text-center">Weight</div>
-                    </div>
-                    {equivalents
-                        .filter((equivalent): equivalent is number => equivalent !== undefined)
-                        .map((equivalent, index) => (
-                            <div key={index} className="w-full flex flex-row justify-between border-t border-gray-500">
-                                <div className="w-[50%] text-center border-r border-gray-500">{index + (lowerLimit ?? 0)}</div>
-                                <div className="w-[50%] text-center">{`${equivalent.toFixed(2)}${useKgs ? "kg" : "lb"}`}</div>
+                        <div className="flex flex-row items-center justify-center gap-2 mb-2">
+                            <span className="font-semibold">Rep range:</span>
+                            <input
+                                type="number" id="lowerLimit" name="lowerLimit" aria-label="Lowest rep count" min="1" max={(upperLimit === undefined || isNaN(upperLimit)) ? 10000 : upperLimit - 1} step="1" value={lowerLimit ?? ""}
+                                className="w-16 p-1 text-center rounded-md border-2 border-black bg-white"
+                                onChange={handleLowerLimitChange}
+                            />
+                            <MoveHorizontal />
+                            <input
+                                type="number" id="upperLimit" name="upperLimit" aria-label="Highest rep count" min={(lowerLimit === undefined || isNaN(lowerLimit)) ? 1 : lowerLimit + 1} max="10000" step="1" value={upperLimit ?? ""}
+                                className="w-16 p-1 text-center rounded-md border-2 border-black bg-white"
+                                onChange={handleUpperLimitChange}
+                            />
+                        </div>
+
+                        <div className="w-full sm:w-96 max-h-80 overflow-y-auto border-2 border-black sm:text-lg">
+                            <div className="sticky top-0 flex flex-row font-semibold bg-slate-200 border-b-2 border-black">
+                                <div className="w-1/2 py-1 text-center border-r border-black">Reps</div>
+                                <div className="w-1/2 py-1 text-center">Weight</div>
                             </div>
-                        ))
-                    }
-                </div>
+                            {equivalents.length === 0 ? (
+                                <div className="py-2 text-sm text-stone-600">Enter weight, reps &amp; a valid rep range.</div>
+                            ) : equivalents
+                                .filter((equivalent): equivalent is number => equivalent !== undefined)
+                                .map((equivalent, index) => {
+                                    const rowReps = index + (lowerLimit ?? 0);
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`flex flex-row border-b border-black last:border-b-0 ${rowReps === reps ? "bg-orange-100 font-semibold" : ""}`}
+                                        >
+                                            <div className="w-1/2 py-0.5 text-center border-r border-black">{rowReps}</div>
+                                            <div className="w-1/2 py-0.5 text-center">{`${equivalent.toFixed(2)}${unit}`}</div>
+                                        </div>
+                                    );
+                                })
+                            }
+                        </div>
+                    </>}
 
+                </div>
             </div>
 
         </div>
@@ -296,7 +327,7 @@ const CalculatorContent = () => {
 const Page = () => {
     return (
         <Suspense fallback={
-            <div className="flex flex-col items-center justify-center text-center p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160">
+            <div className="flex flex-col items-center justify-center text-center p-4 sm:m-4 bg-slate-200 sm:border-t border-b sm:border-l sm:border-r border-black text-black min-w-full sm:min-w-160 sm:w-[60vw]">
                 Loading...
             </div>
         }>

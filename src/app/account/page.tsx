@@ -9,6 +9,9 @@ import { MAX_BIO_LENGTH, MAX_BODY_WEIGHT } from "@/lib/constants";
 import type { PrivacySettings } from "@/lib/models";
 import { kgsToPounds, poundsToKgs } from "@/lib/formulas";
 import Link from 'next/link';
+import ContentsLinks from "@/app/components/ContentsLinks";
+import UnitToggle from "@/app/components/UnitToggle";
+import { useUnitContext } from "@/app/components/contextProviders/UnitProvider";
 
 const Page = () => {
 
@@ -50,7 +53,10 @@ const Page = () => {
     const [newPassword, setNewPassword] = useState('');
     const [newPasswordVisible, setNewPasswordVisible] = useState(false);
     const [newBodyWeight, setNewBodyWeight] = useState('');
-    const [bodyWeightUnit, setBodyWeightUnit] = useState<"lbs" | "kg">("lbs");
+    // Unit for entering & displaying body weight, shared with the rest of the site ('UnitProvider')
+    const { useKgs, setUseKgs } = useUnitContext();
+    const bodyWeightUnit: "lbs" | "kg" = useKgs ? "kg" : "lbs";
+    const setBodyWeightUnit = (unit: "lbs" | "kg") => setUseKgs(unit === "kg");
     // Values returned by '/api/account/bodyweight' after saving. These take priority over the session values,
     // so the page never displays a stale value while (or if) the session is still refreshing.
     const [savedBodyWeight, setSavedBodyWeight] = useState<{ value: number | null } | null>(null);
@@ -61,6 +67,8 @@ const Page = () => {
     // Values returned by '/api/account/bio' & '/api/account/privacy' after saving, taking priority over the session (like 'savedBodyWeight')
     const [savedBio, setSavedBio] = useState<{ value: string | null } | null>(null);
     const [savedPrivacy, setSavedPrivacy] = useState<PrivacySettings | null>(null);
+    // Value returned by '/api/account/preferences/useKgs' after saving, taking priority over the session (like 'savedPrivacy')
+    const [savedPrefersKgs, setSavedPrefersKgs] = useState<boolean | null>(null);
 
     // Form outputs
     const [usernameErrors, setUsernameErrors] = useState<string[]>([]);
@@ -99,6 +107,10 @@ const Page = () => {
     const [updatePrivacyOutputColor, setUpdatePrivacyOutputColor] = useState<"black" | "red" | "green">("black");
     const [formLoading6, setFormLoading6] = useState(false);
 
+    const [updateGeneralOutput, setUpdateGeneralOutput] = useState<string[]>([]);
+    const [updateGeneralOutputColor, setUpdateGeneralOutputColor] = useState<"black" | "red" | "green">("black");
+    const [formLoading7, setFormLoading7] = useState(false);
+
     const currentBio: string | null = useMemo(() =>
         savedBio !== null ? savedBio.value : (data?.user?.bio ?? null),
         [data, savedBio]
@@ -123,6 +135,12 @@ const Page = () => {
             liftsPublic: data?.user?.liftsPublic ?? false,
         },
         [data, savedPrivacy]
+    );
+
+    // Defaults to pounds, matching the database default
+    const currentPrefersKgs: boolean = useMemo(() =>
+        savedPrefersKgs ?? data?.user?.prefersKgs ?? false,
+        [data, savedPrefersKgs]
     );
 
     // Stored in pounds
@@ -195,6 +213,7 @@ const Page = () => {
             setImageLoading(false);
             await update();
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             setImageError('Failed to upload image. Please try again.');
             setTimeout(() => setImageError(''), 5000);
@@ -655,6 +674,57 @@ const Page = () => {
         }
     }
 
+    // Saves the preferred unit immediately, and switches the displayed unit to match
+    async function handleUnitPreferenceChange(newPrefersKgs: boolean) {
+        if (formLoading7 || newPrefersKgs === currentPrefersKgs) return;
+
+        const previous = currentPrefersKgs;
+        setSavedPrefersKgs(newPrefersKgs);
+        setUseKgs(newPrefersKgs);
+
+        document.body.style.cursor = "wait";
+        setFormLoading7(true);
+
+        // Clears output fields
+        setUpdateGeneralOutput([]);
+        setUpdateGeneralOutputColor("black");
+
+        // Updates the preferred unit using '/api/account/preferences/useKgs' endpoint
+        const result = await fetch('/api/account/preferences/useKgs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ useKgs: newPrefersKgs }),
+        });
+
+        // Displays error / success from above endpoint
+        const data = await result.json();
+        if (!result.ok) {
+            setSavedPrefersKgs(previous);
+            setUseKgs(previous);
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setUpdateGeneralOutput([errorMsg]);
+            setUpdateGeneralOutputColor("red");
+            setTimeout(() => {
+                setUpdateGeneralOutput([]);
+            }, 5000);
+            document.body.style.cursor = "default";
+            setFormLoading7(false);
+            return;
+        }
+        else {
+            setSavedPrefersKgs(data.prefersKgs);
+            setUpdateGeneralOutput([`Weights are now shown in ${data.prefersKgs ? "kilograms" : "pounds"} by default.`]);
+            setUpdateGeneralOutputColor("green");
+            setTimeout(() => {
+                setUpdateGeneralOutput([]);
+            }, 3000);
+            document.body.style.cursor = "default";
+            setFormLoading7(false);
+            await update(); // Updates { data, status } ('useSession')
+            return;
+        }
+    }
+
     async function handleDeleteAccountSubmit() {
 
         // Clears output fields
@@ -733,6 +803,19 @@ const Page = () => {
                 Account
             </div>
 
+            <div className="mb-3">
+                <ContentsLinks links={[
+                    { id: "profile-photo", label: "Profile photo" },
+                    { id: "username", label: "Username" },
+                    { id: "bio", label: "Bio" },
+                    { id: "body-weight", label: "Body weight" },
+                    { id: "password", label: "Password" },
+                    { id: "general-settings", label: "General settings" },
+                    { id: "privacy", label: "Privacy" },
+                    { id: "delete-account", label: "Delete account" },
+                ]} />
+            </div>
+
             <div className="flex flex-row justify-center sm:text-lg mx-4">
                 <span className="mr-1">Username:</span>
                 &quot;
@@ -744,10 +827,10 @@ const Page = () => {
                 <span className="mr-1">Email address: &quot;<span className="font-bold">{email}&quot;</span></span>
             </div>
 
-            <div className="flex flex-col items-center justify-center mx-4 mb-2 gap-2">
+            <div id="profile-photo" className="scroll-mt-4 flex flex-col items-center justify-center mx-4 mb-2 gap-2">
 
                 <Image
-                    className="border border-black"
+                    className="border-2 border-black"
                     src={imageURL !== undefined ? imageURL : "/default_avatar.webp"}
                     alt={imageURL !== undefined ? "User's profile image" : "Blank profile image"}
                     width={300}
@@ -799,7 +882,8 @@ const Page = () => {
             </div>
 
             <form
-                className="flex flex-col mb-2 min-w-[80%]"
+                id="username"
+                className="scroll-mt-4 flex flex-col mb-2 min-w-[80%]"
                 onSubmit={(e) => {
                     e.preventDefault();
                     if (formLoading1) return;
@@ -858,7 +942,8 @@ const Page = () => {
             </form>
 
             <form
-                className="flex flex-col mb-2 min-w-[80%]"
+                id="bio"
+                className="scroll-mt-4 flex flex-col mb-2 min-w-[80%]"
                 onSubmit={(e) => {
                     e.preventDefault();
                     if (formLoading5) return;
@@ -934,7 +1019,8 @@ const Page = () => {
             </form>
 
             <form
-                className="flex flex-col mb-2 min-w-[80%]"
+                id="body-weight"
+                className="scroll-mt-4 flex flex-col mb-2 min-w-[80%]"
                 onSubmit={(e) => {
                     e.preventDefault();
                     if (formLoading3) return;
@@ -1048,7 +1134,8 @@ const Page = () => {
             </form>
 
             <form
-                className="flex flex-col mb-3 min-w-[80%]"
+                id="password"
+                className="scroll-mt-4 flex flex-col mb-3 min-w-[80%]"
                 onSubmit={(e) => {
                     e.preventDefault();
                     if (formLoading2) return;
@@ -1169,10 +1256,38 @@ const Page = () => {
 
             </form>
 
+            <div id="general-settings" className="scroll-mt-4 flex flex-col mb-3 min-w-[80%]">
+
+                <div className="flex flex-row justify-center sm:text-lg mx-4 font-bold mb-1">
+                    General settings:
+                </div>
+
+                {/* Saves immediately when toggled */}
+                <div className={`flex flex-row flex-wrap items-center justify-center gap-x-3 mx-4 ${formLoading7 ? "hover:cursor-wait" : ""}`}>
+                    <span className="sm:text-lg font-medium mb-2">Preferred unit:</span>
+                    <UnitToggle falseString="Pounds" trueString="Kilograms" value={currentPrefersKgs} setValue={handleUnitPreferenceChange} />
+                </div>
+
+                {/* 'w-0 min-w-full' fills the section's width without widening it */}
+                <div className="w-0 min-w-full px-4 text-xs text-stone-600">
+                    Used for weights across the site each time you visit. Unit toggles on other pages only change it until you reload.
+                </div>
+
+                {updateGeneralOutput.length > 0 && (
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${updateGeneralOutputColor === "red" ? "text-red-600" : updateGeneralOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                        {updateGeneralOutput.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+            </div>
+
             {/* A form only so 'autoComplete="off"' stops browsers (e.g. Firefox) restoring the controls' disabled / checked
                 state after a reload, which wouldn't match the server-rendered HTML (hydration mismatch). Nothing is submitted. */}
             <form
-                className="flex flex-col mb-3 min-w-[80%]"
+                id="privacy"
+                className="scroll-mt-4 flex flex-col mb-3 min-w-[80%]"
                 autoComplete="off"
                 onSubmit={(e) => e.preventDefault()}
             >
@@ -1259,7 +1374,8 @@ const Page = () => {
             </form>
 
             <form
-                className="flex flex-col mb-3 min-w-[80%]"
+                id="delete-account"
+                className="scroll-mt-4 flex flex-col mb-3 min-w-[80%]"
                 onSubmit={(e) => {
                     e.preventDefault();
                     if (formLoading4) return;
@@ -1329,4 +1445,4 @@ const Page = () => {
     );
 }
 
-export default Page;
+export default Page;

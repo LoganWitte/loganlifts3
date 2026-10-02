@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { getOneRepMax } from '@/lib/formulas';
 import type { Exercise, Lift } from '@/lib/models';
 import { useExerciseContext } from '@/app/components/contextProviders/ExerciseProvider';
 import { useLiftContext } from '@/app/components/contextProviders/LiftProvider';
 import UnitToggle from '@/app/components/UnitToggle';
+import { useUnitContext } from '@/app/components/contextProviders/UnitProvider';
 import LogLiftForm from './LogLiftForm';
 import EquivalentLifts from './EquivalentLifts';
 import LiftHistory, { PreviousBest } from './LiftHistory';
@@ -50,8 +52,6 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
 
     const { data, status, update } = useSession();
     const searchParams = useSearchParams();
-    const pathname = usePathname();
-    const router = useRouter();
 
     const weightCoefficient = exercise.weightCoefficient;
     const traditional = weightCoefficient === null;
@@ -64,15 +64,12 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
         [data]
     );
 
-    // Unit toggle. The URL's 'useKgs' param sets the initial unit, and is kept updated like '/calculator'.
+    // Unit toggle, shared across pages & initialized from the user's preference ('UnitProvider').
     // Weights in the URL are always in pounds.
-    const [useKgs, setUseKgs] = useState(searchParams.get('useKgs') === 'true');
+    const { useKgs, setUseKgs } = useUnitContext();
 
     function handleUnitToggle(newUseKgs: boolean) {
         setUseKgs(newUseKgs);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('useKgs', String(newUseKgs));
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }
 
     // Initial values from the URL ('weight' & 'reps', e.g. from '/calculator'), falling back to defaults.
@@ -190,6 +187,14 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
                 ))}
             </div>
 
+            <Link
+                href="/exercises"
+                className="flex flex-row items-center gap-1 text-sm font-medium underline hover:text-orange-600 mb-2"
+            >
+                <ArrowLeft size={16} />
+                Back to exercises
+            </Link>
+
             {exercise.description !== null && (
                 <div className="w-0 min-w-full px-4 sm:text-lg whitespace-pre-wrap mb-1">
                     {exercise.description}
@@ -217,6 +222,11 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
 
             <UnitToggle falseString="Pounds" trueString="Kilograms" value={useKgs} setValue={handleUnitToggle} />
 
+            {/* Shown first, as context for logging the next set */}
+            {bestLift !== undefined && (
+                <PreviousBest lift={bestLift} weightCoefficient={weightCoefficient} useKgs={useKgs} />
+            )}
+
             <LogLiftForm
                 exerciseId={exercise.id}
                 weightCoefficient={weightCoefficient}
@@ -231,10 +241,6 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
                 accountBodyWeight={accountBodyWeight}
                 onLogged={handleLogged}
             />
-
-            {bestLift !== undefined && (
-                <PreviousBest lift={bestLift} weightCoefficient={weightCoefficient} useKgs={useKgs} />
-            )}
 
             <EquivalentLifts
                 autoOneRepMax={bestLift?.oneRepMax ?? currentOneRepMax}

@@ -7,7 +7,6 @@ import type { Exercise } from '@/lib/models';
 export type CalculatorParams = {
     weight: number | undefined,
     reps: number | undefined,
-    useKgs: boolean | undefined,
 };
 
 interface ExerciseCardProps {
@@ -35,12 +34,11 @@ const StatusLabel = ({ label, color }: { label: string, color: "orange" | "green
 // Displays a single exercise, linking to its page
 const ExerciseCard = ({ exercise, calculatorParams }: ExerciseCardProps) => {
 
-    // Constructs href link with optional weight, reps, and useKgs query params
-    const { weight, reps, useKgs } = calculatorParams;
+    // Constructs href link with optional weight & reps query params
+    const { weight, reps } = calculatorParams;
     const params = new URLSearchParams();
     if (weight !== undefined) params.set("weight", String(weight));
     if (reps !== undefined) params.set("reps", String(reps));
-    if (useKgs !== undefined) params.set("useKgs", String(useKgs));
     const query = params.toString();
     const href = `/exercises/${exercise.URLSlug}${query ? "?" + query : ""}`;
 

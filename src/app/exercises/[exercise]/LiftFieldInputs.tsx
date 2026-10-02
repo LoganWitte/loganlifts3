@@ -151,15 +151,17 @@ const LiftFieldInputs = ({ values, setValues, errors, setErrors, weightCoefficie
     }
 
     const displayed = (pounds: number | undefined) => pounds === undefined ? "" : toDisplayWeight(pounds, useKgs);
+    // Matches inputs elsewhere in this project (e.g. '/calculator')
     const inputClass = (hasErrors: boolean) =>
-        `bg-gray-300 border p-1 ml-1 w-30 rounded-md ${hasErrors ? "border-red-600 text-red-600" : "border-black"}`;
+        `w-full p-2 rounded-md border-2 bg-white ${hasErrors ? "border-red-600 text-red-600" : "border-black text-black"}`;
+    const labelClass = "font-semibold sm:text-lg";
 
     return (
-        <div className="sm:min-w-96 w-fit flex flex-col mx-4 mb-2 gap-1">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2 text-left">
 
-            {traditional ? <>
-                <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                    <label htmlFor={`${idPrefix}-weight`} className="font-bold sm:text-lg">Weight {unitLabel}:</label>
+            {traditional ? (
+                <div className="flex flex-col gap-1">
+                    <label htmlFor={`${idPrefix}-weight`} className={labelClass}>Weight {unitLabel}</label>
                     <input
                         key={inputKey}
                         type="number" id={`${idPrefix}-weight`} min="0" step="any" defaultValue={displayed(values.weight)}
@@ -167,11 +169,11 @@ const LiftFieldInputs = ({ values, setValues, errors, setErrors, weightCoefficie
                         onChange={(e) => handleWeightChange("weight", e.target.value)}
                         onBlur={handleNumberBlur}
                     />
+                    <FieldErrors errors={errors.weight} />
                 </div>
-                <FieldErrors errors={errors.weight} />
-            </> : <>
-                <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                    <label htmlFor={`${idPrefix}-added-weight`} className="font-bold sm:text-lg">Added weight {unitLabel}:</label>
+            ) : (
+                <div className="flex flex-col gap-1">
+                    <label htmlFor={`${idPrefix}-added-weight`} className={labelClass}>Added weight {unitLabel}</label>
                     <input
                         key={inputKey}
                         type="number" id={`${idPrefix}-added-weight`} min="0" step="any" defaultValue={displayed(values.addedWeight)}
@@ -179,17 +181,17 @@ const LiftFieldInputs = ({ values, setValues, errors, setErrors, weightCoefficie
                         onChange={(e) => handleWeightChange("addedWeight", e.target.value)}
                         onBlur={handleNumberBlur}
                     />
+                    {weightCoefficient === 0 && (
+                        <div className="w-0 min-w-full text-xs text-left text-stone-600">
+                            Recorded only. Added weight isn&apos;t counted toward this exercise&apos;s 1RM.
+                        </div>
+                    )}
+                    <FieldErrors errors={errors.addedWeight} />
                 </div>
-                {weightCoefficient === 0 && (
-                    <div className="w-0 min-w-full text-xs text-left text-stone-600">
-                        Recorded only. Added weight isn&apos;t counted toward this exercise&apos;s 1RM.
-                    </div>
-                )}
-                <FieldErrors errors={errors.addedWeight} />
-            </>}
+            )}
 
-            <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                <label htmlFor={`${idPrefix}-body-weight`} className="font-bold sm:text-lg">Body weight {unitLabel}:</label>
+            <div className="flex flex-col gap-1">
+                <label htmlFor={`${idPrefix}-body-weight`} className={labelClass}>Body weight {unitLabel}</label>
                 <input
                     key={inputKey}
                     type="number" id={`${idPrefix}-body-weight`} min="0" step="any" defaultValue={displayed(values.bodyWeight)}
@@ -198,11 +200,11 @@ const LiftFieldInputs = ({ values, setValues, errors, setErrors, weightCoefficie
                     onChange={(e) => handleWeightChange("bodyWeight", e.target.value)}
                     onBlur={handleNumberBlur}
                 />
+                <FieldErrors errors={errors.bodyWeight} />
             </div>
-            <FieldErrors errors={errors.bodyWeight} />
 
-            <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                <label htmlFor={`${idPrefix}-reps`} className="font-bold sm:text-lg">Reps:</label>
+            <div className="flex flex-col gap-1">
+                <label htmlFor={`${idPrefix}-reps`} className={labelClass}>Reps</label>
                 <input
                     key={inputKey}
                     type="number" id={`${idPrefix}-reps`} min="1" step="1" defaultValue={values.reps ?? ""}
@@ -210,21 +212,21 @@ const LiftFieldInputs = ({ values, setValues, errors, setErrors, weightCoefficie
                     onChange={(e) => handleRepsChange(e.target.value)}
                     onBlur={handleNumberBlur}
                 />
+                <FieldErrors errors={errors.reps} />
             </div>
-            <FieldErrors errors={errors.reps} />
 
-            <div className="min-w-full w-fit flex flex-row items-center justify-between">
-                <label htmlFor={`${idPrefix}-time`} className="font-bold sm:text-lg mr-2">Date / time:</label>
+            <div className="flex flex-col gap-1">
+                <label htmlFor={`${idPrefix}-time`} className={labelClass}>Date / time</label>
                 <input
                     type="datetime-local" id={`${idPrefix}-time`}
                     max={maxTime}
                     value={values.time}
                     onFocus={() => setMaxTime(toDateTimeInputValue(new Date(Date.now() + FUTURE_TIME_TOLERANCE_MS)))}
-                    className={`bg-gray-300 border p-1 ml-1 rounded-md ${errors.time.length > 0 ? "border-red-600 text-red-600" : "border-black"}`}
+                    className={inputClass(errors.time.length > 0)}
                     onChange={(e) => updateField("time", e.target.value, { timeEdited: true })}
                 />
+                <FieldErrors errors={errors.time} />
             </div>
-            <FieldErrors errors={errors.time} />
 
         </div>
     );

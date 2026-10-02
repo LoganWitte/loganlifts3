@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowDown } from 'lucide-react';
 import type { PublicLift } from '@/lib/models';
 import UnitToggle from '@/app/components/UnitToggle';
+import { useUnitContext } from '@/app/components/contextProviders/UnitProvider';
 import { formatLiftTime, formatWeight } from '@/app/exercises/[exercise]/liftDisplay';
 import { formatMemberSince } from '../ProfileCard';
 import { useProfileContext } from '@/app/components/contextProviders/ProfileProvider';
@@ -127,7 +128,7 @@ const ProfileLifts = ({ lifts, useKgs }: { lifts: PublicLift[], useKgs: boolean 
                 {prs.map((lift) => (
                     <Link
                         key={lift.exercise.URLSlug}
-                        href={`/exercises/${lift.exercise.URLSlug}?useKgs=${useKgs}`}
+                        href={`/exercises/${lift.exercise.URLSlug}`}
                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-left p-3 rounded-md border-2 border-black bg-white hover:bg-orange-100 hover:cursor-pointer"
                     >
                         <span className="text-lg font-bold">{lift.exercise.name}</span>
@@ -144,7 +145,7 @@ const ProfileLifts = ({ lifts, useKgs }: { lifts: PublicLift[], useKgs: boolean 
                 {lifts.slice(0, RECENT_LIFTS_LIMIT).map((lift) => (
                     <div key={lift.id} className="flex flex-col p-3 rounded-md border-2 border-black bg-white">
                         <Link
-                            href={`/exercises/${lift.exercise.URLSlug}?useKgs=${useKgs}`}
+                            href={`/exercises/${lift.exercise.URLSlug}`}
                             className="w-fit text-left font-bold text-blue-600 underline sm:no-underline hover:underline mb-1"
                         >
                             {lift.exercise.name}
@@ -162,23 +163,17 @@ const ProfileContent = () => {
 
     const { id } = useParams<{ id: string }>();
     const { status } = useSession();
-    const searchParams = useSearchParams();
-    const pathname = usePathname();
-    const router = useRouter();
 
     // Profile from '/api/users/[id]', stored in 'ProfileProvider' so revisiting this page shows it immediately while it refreshes.
     // 'profile' is null while loading for the first time. 'notFound' for private & nonexistent profiles alike.
     const { getProfileEntry, refreshProfile } = useProfileContext();
     const { profile, notFound, error } = getProfileEntry(id);
 
-    // Unit toggle. The URL's 'useKgs' param sets the initial unit, and is kept updated like '/exercises/[exercise]'.
-    const [useKgs, setUseKgs] = useState(searchParams.get('useKgs') === 'true');
+    // Unit toggle, shared across pages & initialized from the user's preference ('UnitProvider')
+    const { useKgs, setUseKgs } = useUnitContext();
 
     function handleUnitToggle(newUseKgs: boolean) {
         setUseKgs(newUseKgs);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('useKgs', String(newUseKgs));
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }
 
     // Refreshes the profile each visit once session has loaded, as owners may view their own private profile
