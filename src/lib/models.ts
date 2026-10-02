@@ -13,12 +13,13 @@ export const CATEGORY_OPTIONS = ["Any Category", "Barbell", "Bodyweight", "Dumbb
 // "Whole Body" means that every listed body part is engaged
 // NOTE: "Whole Body" must be referenced as "Whole_Body" when interacting with Prisma, as Prisma enums do not support multi-word identifiers
 // However, as seen in schema.prisma, it uses "@map("Whole Body")", meaning it will be returned as "Whole Body" from "prisma.find...*" searches
-export type bodyPart = "Whole Body" | "Chest" | "Back" |
+// This also applies to "Upper Back" and "Lower Back"
+export type bodyPart = "Whole Body" | "Chest" | "Upper Back" | "Lower Back" |
     "Shoulders" | "Biceps" | "Triceps" | "Forearms" |
     "Quads" | "Hamstrings" | "Calves" | "Glutes" |
     "Abductors" | "Adductors" | "Core";
 // Used in form inputs for searching for exercise based on muscle used
-export const BODY_PART_OPTIONS = ["Any Body Part", "Whole Body", "Chest", "Back",
+export const BODY_PART_OPTIONS = ["Any Body Part", "Whole Body", "Chest", "Upper Back", "Lower Back",
     "Shoulders", "Biceps", "Triceps", "Forearms", "Quads", "Hamstrings", "Calves",
     "Glutes", "Abductors", "Adductors", "Core"];
 

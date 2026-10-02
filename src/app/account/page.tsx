@@ -1,9 +1,9 @@
 'use client'
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useState, useMemo, useRef } from "react";
 import Image from 'next/image';
-import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey, FaWeightScale } from 'react-icons/fa6'
+import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey, FaWeightScale, FaUserXmark } from 'react-icons/fa6'
 import { checkPassword, checkUsername } from "@/lib/credentialChecks";
 import { MAX_BODY_WEIGHT } from "@/lib/constants";
 import { kgsToPounds, poundsToKgs } from "@/lib/formulas";
@@ -33,6 +33,14 @@ const Page = () => {
         [data]
     );
 
+    // Value the user must type to delete their account: their username, or their email if they have no username.
+    // null while the session is loading.
+    const deleteConfirmTarget: string | null = useMemo(() =>
+        data?.user?.name || data?.user?.email || null,
+        [data]
+    );
+    const hasUsername: boolean = !!data?.user?.name;
+
 
     // Form inputs
     const [newUsername, setNewUsername] = useState('');
@@ -46,6 +54,7 @@ const Page = () => {
     // so the page never displays a stale value while (or if) the session is still refreshing.
     const [savedBodyWeight, setSavedBodyWeight] = useState<{ value: number | null } | null>(null);
     const [savedAutoUpdate, setSavedAutoUpdate] = useState<boolean | null>(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
     // Form outputs
     const [usernameErrors, setUsernameErrors] = useState<string[]>([]);
@@ -67,6 +76,12 @@ const Page = () => {
     const [updateBodyWeightOutput, setUpdateBodyWeightOutput] = useState<string[]>([]);
     const [updateBodyWeightOutputColor, setUpdateBodyWeightOutputColor] = useState<"black" | "red" | "green">("black");
     const [formLoading3, setFormLoading3] = useState(false);
+
+    const [deleteConfirmationErrors, setDeleteConfirmationErrors] = useState<string[]>([]);
+    const [deleteConfirmationHighlighted, setDeleteConfirmationHighlighted] = useState(false);
+    const [deleteAccountOutput, setDeleteAccountOutput] = useState<string[]>([]);
+    const [deleteAccountOutputColor, setDeleteAccountOutputColor] = useState<"black" | "red" | "green">("black");
+    const [formLoading4, setFormLoading4] = useState(false);
 
     // Stored in pounds
     const currentBodyWeight: number | null = useMemo(() =>
@@ -137,7 +152,7 @@ const Page = () => {
             document.body.style.cursor = "default";
             setImageLoading(false);
             await update();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
         } catch (error) {
             setImageError('Failed to upload image. Please try again.');
             setTimeout(() => setImageError(''), 5000);
@@ -448,6 +463,77 @@ const Page = () => {
             checked ? "Auto-update turned on." : "Auto-update turned off."
         );
         if (!success) setSavedAutoUpdate(previous);
+    }
+
+    async function handleDeleteAccountSubmit() {
+
+        // Clears output fields
+        setDeleteAccountOutput([]);
+        setDeleteAccountOutputColor("black");
+        setDeleteConfirmationHighlighted(false);
+        setDeleteConfirmationErrors([]);
+
+        // Checks that the user typed their entire username (or email, if they have no username)
+        let error = "";
+        if (deleteConfirmTarget === null) {
+            error = "Account still loading. Try again in a moment.";
+        }
+        else if (deleteConfirmation.trim().length === 0) {
+            error = hasUsername ? "Username missing." : "Email address missing.";
+        }
+        else if (deleteConfirmation.trim() !== deleteConfirmTarget) {
+            error = hasUsername ? "Username does not match." : "Email address does not match.";
+        }
+
+        // Handles error with confirmation field
+        if (error !== "") {
+            setDeleteConfirmationErrors([error]);
+            setDeleteConfirmationHighlighted(true);
+            setTimeout(() => {
+                setDeleteConfirmationErrors([]);
+                setDeleteConfirmationHighlighted(false);
+            }, 5000);
+            return;
+        }
+
+        const confirmed = window.confirm(`Are you sure you would like to permanently delete your account "${deleteConfirmTarget}"? This also deletes all of your logged lifts and custom exercises. This action is permanent and cannot be undone.`);
+        if (!confirmed) return;
+
+        document.body.style.cursor = "wait";
+        setFormLoading4(true);
+
+        // Deletes account using '/api/account/delete' endpoint
+        const result = await fetch('/api/account/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                confirmUsername: deleteConfirmation.trim(),
+            }),
+        });
+
+        // Displays error / success from above endpoint
+        const data = await result.json();
+        if (!result.ok) {
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setDeleteAccountOutput([errorMsg]);
+            setDeleteAccountOutputColor("red");
+            setTimeout(() => {
+                setDeleteAccountOutput([]);
+                setDeleteConfirmationHighlighted(false);
+                setDeleteConfirmationErrors([]);
+            }, 5000);
+            document.body.style.cursor = "default";
+            setFormLoading4(false);
+            return;
+        }
+        else {
+            setDeleteAccountOutput(["Account deleted. Signing out..."]);
+            setDeleteAccountOutputColor("green");
+            document.body.style.cursor = "default";
+            // Signs out & returns to the home page, as the account no longer exists
+            await signOut({ redirectTo: '/' });
+            return;
+        }
     }
 
     return (
@@ -814,6 +900,72 @@ const Page = () => {
                         Forgot Password?
                     </Link>
                 }
+
+            </form>
+
+            <form
+                className="flex flex-col mb-3 min-w-[80%]"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (formLoading4) return;
+                    handleDeleteAccountSubmit();
+                }}
+            >
+
+                <div className="flex flex-row justify-center sm:text-lg mx-4 font-bold">
+                    Delete account:
+                </div>
+
+                {/* 'w-0 min-w-full' fills the form's width without widening it */}
+                <div className="w-0 min-w-full px-4 text-sm text-stone-600">
+                    Type your {hasUsername ? "username" : "email address"}{deleteConfirmTarget !== null && <> (&quot;<span className="font-bold">{deleteConfirmTarget}</span>&quot;)</>} to confirm.
+                    This permanently deletes your account, your logged lifts, and your custom exercises.
+                </div>
+
+                <input
+                    type="text"
+                    autoComplete="off"
+                    className={`
+                        flex flex-row justify-center p-2 mx-4 rounded-md border-2 mt-1
+                        ${deleteConfirmationHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
+                    `}
+                    placeholder={hasUsername ? "Username" : "Email address"}
+                    value={deleteConfirmation}
+                    onChange={
+                        (e) => {
+                            setDeleteConfirmation(e.target.value);
+                            setDeleteConfirmationHighlighted(false);
+                            setDeleteConfirmationErrors([]);
+                            setDeleteAccountOutput([]);
+                            setDeleteAccountOutputColor("black");
+                        }
+                    }
+                />
+
+                {deleteConfirmationErrors.length > 0 && (
+                    <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc mt-1">
+                        {deleteConfirmationErrors.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+                <button
+                    type="submit"
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black  text-black 
+                        ${formLoading4 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
+                >
+                    <FaUserXmark className="scale-160 ml-2 mr-4" />
+                    Delete account
+                </button>
+
+                {deleteAccountOutput.length > 0 && (
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${deleteAccountOutputColor === "red" ? "text-red-600" : deleteAccountOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                        {deleteAccountOutput.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
 
             </form>
 

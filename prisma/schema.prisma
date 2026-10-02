@@ -120,7 +120,7 @@ model MagicLinkRateLimit {
 enum BodyPart {
   Whole_Body @map("Whole Body")
   Chest
-  Back
+  Upper_Back @map("Upper Back")
   Shoulders
   Biceps
   Triceps
@@ -132,6 +132,7 @@ enum BodyPart {
   Abductors
   Adductors
   Core
+  Lower_Back @map("Lower Back")
 }
 
 // Supported categories of exercises

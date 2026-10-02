@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Wrench, Calculator } from 'lucide-react'
+import { Wrench, Calculator, Dumbbell } from 'lucide-react'
 
 const Page = () => {
     return (
@@ -14,7 +14,7 @@ const Page = () => {
                 <span>This site is currently in-progress. Features may be missing, incomplete, or subject to change.</span>
             </div>
 
-            <div className="sm:text-lg mx-4">
+            <div className="sm:text-lg mx-4 mb-2">
                 All-in-one lifting platform. Track lifts, view PR&apos;s, and plan your next workout all in one spot!
             </div>
 
@@ -24,12 +24,23 @@ const Page = () => {
 
             <Link
                 href="/calculator"
-                className="flex flex-row items-center text-left sm:text-lg font-medium p-2 mx-4 mb-2 rounded-md border sm:border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer w-fit"
+                className="w-fit sm:w-[80%] flex flex-row items-center text-left sm:text-lg font-medium p-2 mx-4 mb-2 rounded-md border sm:border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
             >
                 <Calculator className="mr-2" />
                 <div className="flex flex-col items-start">
                     <span className="font-semibold">Lift Calculator</span>
                     <span className="text-sm font-normal">Estimate your one-rep max and see equivalent weights across rep ranges.</span>
+                </div>
+            </Link>
+
+            <Link
+                href="/exercises"
+                className="w-fit sm:w-[80%] flex flex-row items-center text-left sm:text-lg font-medium p-2 mx-4 mb-2 rounded-md border sm:border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+            >
+                <Dumbbell className="mr-2" />
+                <div className="flex flex-col items-start">
+                    <span className="font-semibold">Exercises</span>
+                    <span className="text-sm font-normal">Browse exercises, log your lifts, and track your previous bests.</span>
                 </div>
             </Link>
 

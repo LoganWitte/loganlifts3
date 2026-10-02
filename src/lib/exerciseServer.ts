@@ -7,7 +7,8 @@ import type { bodyPart, ExerciseFields } from '@/lib/models';
 
 // Prisma enums don't support multi-word identifiers, so "Whole Body" is "Whole_Body" within Prisma calls
 export function toPrismaBodyParts(bodyParts: bodyPart[]): PrismaBodyPart[] {
-    return bodyParts.map((part) => (part === "Whole Body" ? "Whole_Body" : part) as PrismaBodyPart);
+    //return bodyParts.map((part) => (part === "Whole Body" ? "Whole_Body" : part) as PrismaBodyPart);
+    return bodyParts.map(part => (part.replace(" ", "_") as PrismaBodyPart));
 }
 
 // Converts normalized editable fields into Prisma-compatible data
@@ -27,7 +28,7 @@ export function toPrismaExerciseData(fields: ExerciseFields) {
 export function serializeExercise<T extends { bodyParts: string[] }>(exercise: T) {
     return {
         ...exercise,
-        bodyParts: exercise.bodyParts.map((part) => (part === "Whole_Body" ? "Whole Body" : part)) as bodyPart[],
+        bodyParts: exercise.bodyParts.map((part) => (part.replace("_", " ") as bodyPart)) as bodyPart[],
     };
 }
 
