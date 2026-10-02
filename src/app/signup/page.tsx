@@ -90,8 +90,8 @@ const Page = () => {
             return;
         }
 
-        // Signs up using '/api/register' endpoint
-        const result = await fetch('/api/register', {
+        // Signs up using '/api/account/create' endpoint
+        const result = await fetch('/api/account/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

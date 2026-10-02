@@ -180,9 +180,16 @@ const config = {
                         isAdmin: true,
                         bodyWeight: true,
                         bodyWeightAutoUpdate: true,
+                        bio: true,
+                        profilePublic: true,
+                        profilePhotoPublic: true,
+                        bioPublic: true,
+                        bodyWeightPublic: true,
+                        liftsPublic: true,
                     },
                 })
 
+                session.user.id = token.sub // Used to link to the user's own profile ('/profiles/[id]')
                 session.user.hasPassword = !!user?.password
                 session.user.isAdmin = !!user?.isAdmin
                 session.user.name = user?.name ?? null
@@ -190,6 +197,13 @@ const config = {
                 if (user?.email) session.user.email = user.email
                 session.user.bodyWeight = user?.bodyWeight ?? null // Stored in pounds
                 session.user.bodyWeightAutoUpdate = user?.bodyWeightAutoUpdate ?? true
+                session.user.bio = user?.bio ?? null
+                // Privacy settings, defaulting to the database defaults
+                session.user.profilePublic = user?.profilePublic ?? false
+                session.user.profilePhotoPublic = user?.profilePhotoPublic ?? true
+                session.user.bioPublic = user?.bioPublic ?? true
+                session.user.bodyWeightPublic = user?.bodyWeightPublic ?? false
+                session.user.liftsPublic = user?.liftsPublic ?? false
             }
 
             session.provider = token.provider as string | undefined
@@ -239,4 +253,4 @@ const config = {
     },
 } satisfies NextAuthConfig
 
-export const { handlers, auth, signIn, signOut } = NextAuth(config)
+export const { handlers, auth, signIn, signOut } = NextAuth(config)

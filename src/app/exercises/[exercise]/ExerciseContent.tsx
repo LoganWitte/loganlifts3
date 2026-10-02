@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { getOneRepMax } from '@/lib/formulas';
 import type { Exercise, Lift } from '@/lib/models';
 import { useExerciseContext } from '@/app/components/contextProviders/ExerciseProvider';
+import { useLiftContext } from '@/app/components/contextProviders/LiftProvider';
 import UnitToggle from '@/app/components/UnitToggle';
 import LogLiftForm from './LogLiftForm';
 import EquivalentLifts from './EquivalentLifts';
@@ -36,11 +37,6 @@ const StatusLabel = ({ label, color }: { label: string, color: "orange" | "green
             {label}
         </span>
     );
-}
-
-// Sorted oldest first, matching '/api/lifts/get'
-function sortLifts(lifts: Lift[]): Lift[] {
-    return [...lifts].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 }
 
 interface ExerciseDetailProps {
@@ -130,43 +126,20 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
         ? getOneRepMax(effectiveWeight, logValues.reps, "Recommended")
         : undefined;
 
-    // User's lifts for this exercise, oldest first. null while loading (or signed out).
-    const [lifts, setLifts] = useState<Lift[] | null>(null);
-    const [liftsError, setLiftsError] = useState("");
+    // User's lifts for this exercise, oldest first, stored in 'LiftProvider' so revisiting this page shows them immediately.
+    // null while loading for the first time (or signed out).
+    const { getLiftEntry, refreshLifts, upsertLift, removeLift } = useLiftContext();
+    const liftEntry = getLiftEntry(exercise.id);
+    const lifts: Lift[] | null = liftEntry.lifts;
+    // Errors are only shown when there are no stored lifts to display (e.g. a failed refresh keeps the previous lifts)
+    const liftsError = lifts === null ? liftEntry.error : "";
 
-    // Fetches lifts using '/api/lifts/get' endpoint once signed in
+    // Refreshes lifts each visit once signed in ('/api/lifts/get')
+    // Re-fetches if the user signs in / out ('refreshLifts' changes with the signed-in user)
     useEffect(() => {
-        if (status !== "authenticated") {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setLifts(null);
-            return;
-        }
-
-        let cancelled = false;
-
-        async function fetchLifts() {
-            setLiftsError("");
-            try {
-                const result = await fetch(`/api/lifts/get?exerciseId=${encodeURIComponent(exercise.id)}`);
-                const data = await result.json();
-                if (cancelled) return;
-
-                if (!result.ok) {
-                    setLiftsError(data.error ?? "Something went wrong. Try again later.");
-                }
-                else {
-                    setLifts(data.lifts);
-                }
-            }
-            catch {
-                if (cancelled) return;
-                setLiftsError("Server failed to respond. Confirm internet connection or try again later.");
-            }
-        }
-        fetchLifts();
-
-        return () => { cancelled = true; };
-    }, [status, exercise.id]);
+        if (status !== "authenticated") return;
+        refreshLifts(exercise.id);
+    }, [status, exercise.id, refreshLifts]);
 
     // Best lift (highest estimated 1RM)
     const bestLift: Lift | undefined = useMemo(() => {
@@ -178,7 +151,7 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
     const [tableOneRepMax, setTableOneRepMax] = useState<number | null>(null);
 
     async function handleLogged(lift: Lift, bodyWeightUpdated: boolean) {
-        setLifts((current) => current === null ? [lift] : sortLifts([...current, lift]));
+        upsertLift(exercise.id, lift);
 
         // Clears the form back to its defaults
         setLogValues(makeLogValues(bodyWeightUpdated ? lift.bodyWeight : accountBodyWeight));
@@ -188,12 +161,12 @@ const ExerciseDetail = ({ exercise, onExerciseUpdated, onExerciseDeleted }: Exer
     }
 
     async function handleLiftUpdated(lift: Lift, bodyWeightUpdated: boolean) {
-        setLifts((current) => current === null ? current : sortLifts(current.map((l) => l.id === lift.id ? lift : l)));
+        upsertLift(exercise.id, lift);
         if (bodyWeightUpdated) await update();
     }
 
     function handleLiftDeleted(id: string) {
-        setLifts((current) => current === null ? current : current.filter((l) => l.id !== id));
+        removeLift(exercise.id, id);
     }
 
     return (
@@ -385,4 +358,4 @@ const ExerciseContent = () => {
     );
 }
 
-export default ExerciseContent;
+export default ExerciseContent;

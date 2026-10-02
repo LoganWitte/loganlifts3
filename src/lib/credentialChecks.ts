@@ -8,7 +8,7 @@ import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'o
 
 import {
     MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_EMAIL_LENGTH, MAX_EMAIL_LENGTH,
-    MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH
+    MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH, MAX_BIO_LENGTH, MAX_BIO_LINES
 } from './constants'
 
 export type CheckResponse = {
@@ -55,6 +55,74 @@ export const checkUsername = (username: string): CheckResponse => {
     const matches = matcher.hasMatch(username);
     if (matches) {
         errors.push("Username must not contain profanity.");
+    }
+
+    const response: CheckResponse = {
+        status: errors.length === 0,
+        errors: errors,
+    };
+
+    return response;
+}
+
+// Normalizes a bio before it is checked, counted, or saved:
+// - Converts Windows / old Mac line endings to '\n'
+// - Removes trailing spaces & tabs from each line
+// - Collapses 3+ line breaks in a row into 2 (at most one blank line between paragraphs)
+// - Trims leading & trailing whitespace
+// An empty result means the bio should be removed.
+export const normalizeBio = (bio: string): string => {
+    return bio
+        .replace(/\r\n?/g, "\n")
+        .replace(/[ \t]+$/gm, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+}
+
+// Control characters other than tab & line feed
+const BIO_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/;
+// Invisible & text-direction characters (zero-width spaces / joiners, direction marks & overrides, word joiners, BOM, soft hyphen)
+const BIO_INVISIBLE_CHARACTERS = /[­​-‏‪-‮⁠-⁤⁦-⁯﻿]/;
+
+// Checks a bio after normalizing it with 'normalizeBio'. An empty bio is valid (it removes the bio).
+// Bios are only ever displayed as plain text.
+export const checkBio = (bio: string): CheckResponse => {
+
+    bio = normalizeBio(bio);
+    const errors: string[] = [];
+
+    if (bio.length === 0) {
+        const response: CheckResponse = {
+            status: true,
+            errors: []
+        }
+        return response;
+    }
+
+    if (bio.length > MAX_BIO_LENGTH) {
+        errors.push(`Bio must be no more than ${MAX_BIO_LENGTH} characters long.`);
+    }
+
+    if (bio.split("\n").length > MAX_BIO_LINES) {
+        errors.push(`Bio must be no more than ${MAX_BIO_LINES} lines long.`);
+    }
+
+    if (BIO_CONTROL_CHARACTERS.test(bio)) {
+        errors.push("Bio must not contain control characters.");
+    }
+
+    if (BIO_INVISIBLE_CHARACTERS.test(bio)) {
+        errors.push("Bio must not contain invisible or text-direction characters.");
+    }
+
+    // Tests bio for profanity using 'obscenity' package, matching 'checkUsername'
+    const matcher = new RegExpMatcher({
+        ...englishDataset.build(),
+        ...englishRecommendedTransformers,
+    });
+    const matches = matcher.hasMatch(bio);
+    if (matches) {
+        errors.push("Bio must not contain profanity.");
     }
 
     const response: CheckResponse = {
@@ -137,4 +205,4 @@ export const checkPassword = (password: string): CheckResponse => {
     };
 
     return response;
-}
+}

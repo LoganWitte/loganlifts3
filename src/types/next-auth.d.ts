@@ -8,6 +8,12 @@ declare module 'next-auth' {
       isAdmin: boolean
       bodyWeight?: number | null
       bodyWeightAutoUpdate?: boolean
+      bio?: string | null
+      profilePublic?: boolean
+      profilePhotoPublic?: boolean
+      bioPublic?: boolean
+      bodyWeightPublic?: boolean
+      liftsPublic?: boolean
     } & DefaultSession['user']
   }
 }
@@ -16,4 +22,4 @@ declare module 'next-auth/jwt' {
   interface JWT {
     provider?: string
   }
-}
+}

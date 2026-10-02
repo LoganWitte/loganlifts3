@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Wrench, Calculator, Dumbbell } from 'lucide-react'
+import { Wrench, Calculator, Dumbbell, Users } from 'lucide-react'
 
 const Page = () => {
     return (
@@ -41,6 +41,17 @@ const Page = () => {
                 <div className="flex flex-col items-start">
                     <span className="font-semibold">Exercises</span>
                     <span className="text-sm font-normal">Browse exercises, log your lifts, and track your previous bests.</span>
+                </div>
+            </Link>
+
+            <Link
+                href="/profiles"
+                className="w-fit sm:w-[80%] flex flex-row items-center text-left sm:text-lg font-medium p-2 mx-4 mb-2 rounded-md border sm:border-2 border-black text-black bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"
+            >
+                <Users className="mr-2" />
+                <div className="flex flex-col items-start">
+                    <span className="font-semibold">Profiles</span>
+                    <span className="text-sm font-normal">Browse public profiles and see other lifters&apos; PR&apos;s.</span>
                 </div>
             </Link>
 

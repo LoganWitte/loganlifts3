@@ -63,6 +63,15 @@ model User {
   // When 'bodyWeight' was last set (from '/account' or an auto-updating lift). Lifts logged before this time can't auto-update 'bodyWeight'.
   bodyWeightUpdatedAt         DateTime?
   isAdmin                     Boolean    @default(false)
+  bio                         String? // Optional, max MAX_BIO_LENGTH characters & MAX_BIO_LINES lines. Updated via '/api/account/bio'.
+  // Privacy settings. A private profile (profilePublic = false) hides everything, including the username.
+  // The other flags keep their values while the profile is private, and only apply once it is public.
+  // Updated via '/api/account/privacy'.
+  profilePublic               Boolean    @default(false)
+  profilePhotoPublic          Boolean    @default(true)
+  bioPublic                   Boolean    @default(true)
+  bodyWeightPublic            Boolean    @default(false)
+  liftsPublic                 Boolean    @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

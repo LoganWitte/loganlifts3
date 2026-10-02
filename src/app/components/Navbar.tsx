@@ -28,6 +28,11 @@ const Navbar = () => {
                         href="/exercises">
                         Exercises
                     </Link>
+                    <Link
+                        className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] select-none"
+                        href="/profiles">
+                        Profiles
+                    </Link>
                     {
                         status === "authenticated" ? (
                             <>
@@ -87,6 +92,7 @@ const Navbar = () => {
                 <div className="sm:hidden flex flex-col gap-2 p-4 bg-orange-500 border-t border-black">
                     <Link className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] text-white select-none" href="/calculator">Lift Calculator</Link>
                     <Link className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] text-white select-none" href="/exercises">Exercises</Link>
+                    <Link className="p-2 rounded-lg bg-[#00000080] hover:bg-[#000000a0] text-white select-none" href="/profiles">Profiles</Link>
                     {
                         status === "authenticated" ? (
                             <>
@@ -135,4 +141,4 @@ const Navbar = () => {
     );
 }
 
-export default Navbar
+export default Navbar

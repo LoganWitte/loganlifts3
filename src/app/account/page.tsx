@@ -3,9 +3,10 @@
 import { useSession, signOut } from "next-auth/react";
 import { useState, useMemo, useRef } from "react";
 import Image from 'next/image';
-import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey, FaWeightScale, FaUserXmark } from 'react-icons/fa6'
-import { checkPassword, checkUsername } from "@/lib/credentialChecks";
-import { MAX_BODY_WEIGHT } from "@/lib/constants";
+import { FaUser, FaTrash, FaImage, FaEyeSlash, FaEye, FaKey, FaWeightScale, FaUserXmark, FaAddressCard, FaGlobe, FaLock } from 'react-icons/fa6'
+import { checkBio, checkPassword, checkUsername, normalizeBio } from "@/lib/credentialChecks";
+import { MAX_BIO_LENGTH, MAX_BODY_WEIGHT } from "@/lib/constants";
+import type { PrivacySettings } from "@/lib/models";
 import { kgsToPounds, poundsToKgs } from "@/lib/formulas";
 import Link from 'next/link';
 
@@ -55,6 +56,11 @@ const Page = () => {
     const [savedBodyWeight, setSavedBodyWeight] = useState<{ value: number | null } | null>(null);
     const [savedAutoUpdate, setSavedAutoUpdate] = useState<boolean | null>(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
+    // null until the user edits the bio field, which shows the current bio until then
+    const [bioDraft, setBioDraft] = useState<string | null>(null);
+    // Values returned by '/api/account/bio' & '/api/account/privacy' after saving, taking priority over the session (like 'savedBodyWeight')
+    const [savedBio, setSavedBio] = useState<{ value: string | null } | null>(null);
+    const [savedPrivacy, setSavedPrivacy] = useState<PrivacySettings | null>(null);
 
     // Form outputs
     const [usernameErrors, setUsernameErrors] = useState<string[]>([]);
@@ -82,6 +88,42 @@ const Page = () => {
     const [deleteAccountOutput, setDeleteAccountOutput] = useState<string[]>([]);
     const [deleteAccountOutputColor, setDeleteAccountOutputColor] = useState<"black" | "red" | "green">("black");
     const [formLoading4, setFormLoading4] = useState(false);
+
+    const [bioErrors, setBioErrors] = useState<string[]>([]);
+    const [bioHighlighted, setBioHighlighted] = useState(false);
+    const [updateBioOutput, setUpdateBioOutput] = useState<string[]>([]);
+    const [updateBioOutputColor, setUpdateBioOutputColor] = useState<"black" | "red" | "green">("black");
+    const [formLoading5, setFormLoading5] = useState(false);
+
+    const [updatePrivacyOutput, setUpdatePrivacyOutput] = useState<string[]>([]);
+    const [updatePrivacyOutputColor, setUpdatePrivacyOutputColor] = useState<"black" | "red" | "green">("black");
+    const [formLoading6, setFormLoading6] = useState(false);
+
+    const currentBio: string | null = useMemo(() =>
+        savedBio !== null ? savedBio.value : (data?.user?.bio ?? null),
+        [data, savedBio]
+    );
+
+    // The bio field's value: the user's edits, or the current bio if they haven't edited it
+    const bioInput: string = bioDraft ?? currentBio ?? "";
+
+    // Counted on the normalized text, matching 'checkBio'
+    const bioLength: number = useMemo(() =>
+        normalizeBio(bioInput).length,
+        [bioInput]
+    );
+
+    // Defaults match the database defaults
+    const currentPrivacy: PrivacySettings = useMemo(() =>
+        savedPrivacy ?? {
+            profilePublic: data?.user?.profilePublic ?? false,
+            profilePhotoPublic: data?.user?.profilePhotoPublic ?? true,
+            bioPublic: data?.user?.bioPublic ?? true,
+            bodyWeightPublic: data?.user?.bodyWeightPublic ?? false,
+            liftsPublic: data?.user?.liftsPublic ?? false,
+        },
+        [data, savedPrivacy]
+    );
 
     // Stored in pounds
     const currentBodyWeight: number | null = useMemo(() =>
@@ -465,6 +507,154 @@ const Page = () => {
         if (!success) setSavedAutoUpdate(previous);
     }
 
+    // Sends a bio update ('POST' to set, 'DELETE' to remove) to '/api/account/bio', displaying the result
+    // Returns whether the update succeeded
+    async function submitBioUpdate(method: 'POST' | 'DELETE', successMessage: string): Promise<boolean> {
+
+        document.body.style.cursor = "wait";
+        setFormLoading5(true);
+
+        // Clears output fields
+        setUpdateBioOutput([]);
+        setUpdateBioOutputColor("black");
+        setBioHighlighted(false);
+        setBioErrors([]);
+
+        // Updates bio using '/api/account/bio' endpoint
+        const result = await fetch('/api/account/bio', {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: method === 'POST' ? JSON.stringify({ bio: bioInput }) : undefined,
+        });
+
+        // Displays error / success from above endpoint
+        const data = await result.json();
+        if (!result.ok) {
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setUpdateBioOutput([errorMsg]);
+            setUpdateBioOutputColor("red");
+            if (data.details?.bio) {
+                setBioErrors(data.details.bio);
+                setBioHighlighted(true);
+            }
+            setTimeout(() => {
+                setUpdateBioOutput([]);
+                setBioHighlighted(false);
+                setBioErrors([]);
+            }, 5000);
+            document.body.style.cursor = "default";
+            setFormLoading5(false);
+            return false;
+        }
+        else {
+            setSavedBio({ value: data.bio });
+            setBioDraft(null); // Shows the saved (normalized) bio in the field
+            setUpdateBioOutput([successMessage]);
+            setUpdateBioOutputColor("green");
+            setTimeout(() => {
+                setUpdateBioOutput([]);
+                setBioHighlighted(false);
+                setBioErrors([]);
+            }, 3000);
+            document.body.style.cursor = "default";
+            setFormLoading5(false);
+            await update(); // Updates { data, status } ('useSession')
+            return true;
+        }
+    }
+
+    async function handleUpdateBioSubmit() {
+
+        // Checks validity of bio field
+        const bioCheck = checkBio(bioInput);
+        const empty = normalizeBio(bioInput).length === 0;
+
+        let errors: string[] = [];
+        if (!bioCheck.status) {
+            errors = bioCheck.errors;
+        }
+        else if (empty && currentBio === null) {
+            errors = ["Bio missing."];
+        }
+
+        // Handles error with bio
+        if (errors.length > 0) {
+            setUpdateBioOutput([]);
+            setBioErrors(errors);
+            setBioHighlighted(true);
+            setTimeout(() => {
+                setBioErrors([]);
+                setBioHighlighted(false);
+            }, 5000);
+            return;
+        }
+
+        // An empty bio removes the existing one
+        await submitBioUpdate('POST', empty ? "Bio removed." : "Bio successfully updated.");
+    }
+
+    function handleRemoveBio() {
+        const confirmed = window.confirm("Are you sure you would like to remove your bio?");
+        if (!confirmed) return;
+
+        submitBioUpdate('DELETE', "Bio removed.");
+    }
+
+    // Sends privacy setting changes to '/api/account/privacy', displaying the result
+    // The new values are shown immediately, reverting if saving fails (like the 'Auto-update' checkbox)
+    async function handlePrivacyChange(changes: Partial<PrivacySettings>, successMessage: string) {
+
+        const previous = currentPrivacy;
+        setSavedPrivacy({ ...currentPrivacy, ...changes });
+
+        document.body.style.cursor = "wait";
+        setFormLoading6(true);
+
+        // Clears output fields
+        setUpdatePrivacyOutput([]);
+        setUpdatePrivacyOutputColor("black");
+
+        // Updates privacy settings using '/api/account/privacy' endpoint
+        const result = await fetch('/api/account/privacy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(changes),
+        });
+
+        // Displays error / success from above endpoint
+        const data = await result.json();
+        if (!result.ok) {
+            setSavedPrivacy(previous);
+            const errorMsg = data.error ?? "Something went wrong. Try again later.";
+            setUpdatePrivacyOutput([errorMsg]);
+            setUpdatePrivacyOutputColor("red");
+            setTimeout(() => {
+                setUpdatePrivacyOutput([]);
+            }, 5000);
+            document.body.style.cursor = "default";
+            setFormLoading6(false);
+            return;
+        }
+        else {
+            setSavedPrivacy({
+                profilePublic: data.profilePublic,
+                profilePhotoPublic: data.profilePhotoPublic,
+                bioPublic: data.bioPublic,
+                bodyWeightPublic: data.bodyWeightPublic,
+                liftsPublic: data.liftsPublic,
+            });
+            setUpdatePrivacyOutput([successMessage]);
+            setUpdatePrivacyOutputColor("green");
+            setTimeout(() => {
+                setUpdatePrivacyOutput([]);
+            }, 3000);
+            document.body.style.cursor = "default";
+            setFormLoading6(false);
+            await update(); // Updates { data, status } ('useSession')
+            return;
+        }
+    }
+
     async function handleDeleteAccountSubmit() {
 
         // Clears output fields
@@ -660,6 +850,82 @@ const Page = () => {
                 {updateNameOutput.length > 0 && (
                     <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${updateNameOutputColor === "red" ? "text-red-600" : updateNameOutputColor === "green" ? "text-green-600" : "text-black"}`}>
                         {updateNameOutput.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+            </form>
+
+            <form
+                className="flex flex-col mb-2 min-w-[80%]"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (formLoading5) return;
+                    handleUpdateBioSubmit();
+                }}
+            >
+
+                <div className="flex flex-row justify-center sm:text-lg mx-4 font-bold">
+                    Update bio:
+                </div>
+
+                <textarea
+                    rows={4}
+                    className={`
+                        p-2 mx-4 rounded-md border-2 mt-1 resize-y
+                        ${bioHighlighted ? "border-red-600 text-red-600" : "border-black text-black"}
+                    `}
+                    placeholder="Tell others about yourself"
+                    value={bioInput}
+                    onChange={
+                        (e) => {
+                            setBioDraft(e.target.value);
+                            setBioHighlighted(false);
+                            setBioErrors([]);
+                            setUpdateBioOutput([]);
+                            setUpdateBioOutputColor("black");
+                        }
+                    }
+                />
+
+                <div className={`mx-4 text-xs text-right ${bioLength > MAX_BIO_LENGTH ? "text-red-600" : "text-stone-600"}`}>
+                    {bioLength}/{MAX_BIO_LENGTH}
+                </div>
+
+                {bioErrors.length > 0 && (
+                    <ul className="w-full flex flex-col items-start text-sm text-red-600 list-disc mt-1">
+                        {bioErrors.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+                <button
+                    type="submit"
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black  text-black
+                        ${formLoading5 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
+                >
+                    <FaAddressCard className="scale-160 ml-2 mr-4" />
+                    Update bio
+                </button>
+
+                {currentBio !== null && <button
+                    type="button"
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black  text-black
+                        ${formLoading5 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait" : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
+                    onClick={() => {
+                        if (formLoading5) return;
+                        handleRemoveBio();
+                    }}
+                >
+                    <FaTrash className="scale-160 ml-2 mr-4" />
+                    Remove bio
+                </button>}
+
+                {updateBioOutput.length > 0 && (
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${updateBioOutputColor === "red" ? "text-red-600" : updateBioOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                        {updateBioOutput.map((error, i) => {
                             return <li key={i} className="mx-7">{error}</li>
                         })}
                     </ul>
@@ -903,6 +1169,95 @@ const Page = () => {
 
             </form>
 
+            {/* A form only so 'autoComplete="off"' stops browsers (e.g. Firefox) restoring the controls' disabled / checked
+                state after a reload, which wouldn't match the server-rendered HTML (hydration mismatch). Nothing is submitted. */}
+            <form
+                className="flex flex-col mb-3 min-w-[80%]"
+                autoComplete="off"
+                onSubmit={(e) => e.preventDefault()}
+            >
+
+                <div className="flex flex-row justify-center sm:text-lg mx-4 font-bold">
+                    Privacy settings:
+                </div>
+
+                {/* 'w-0 min-w-full' fills the section's width without widening it */}
+                <div className="w-0 min-w-full px-4 text-sm text-stone-600">
+                    A private profile is hidden from everyone, including your username.
+                    The settings below only apply once your profile is public.
+                </div>
+
+                {/* Saves immediately when clicked */}
+                <button
+                    type="button"
+                    disabled={formLoading6 || (!hasUsername && !currentPrivacy.profilePublic)}
+                    className={`flex flex-row items-center justify-center sm:text-lg font-medium p-2 mx-4 mt-2 rounded-md border-2 border-black  text-black
+                        ${formLoading6 ? "bg-[oklch(63.5%_0.213_47.604)] hover:cursor-wait"
+                            : (!hasUsername && !currentPrivacy.profilePublic) ? "bg-stone-300 text-stone-600 hover:cursor-not-allowed"
+                                : "bg-orange-500 hover:bg-[oklch(63.5%_0.213_47.604)] hover:cursor-pointer"}`}
+                    onClick={() => handlePrivacyChange(
+                        { profilePublic: !currentPrivacy.profilePublic },
+                        currentPrivacy.profilePublic ? "Your profile is now private." : "Your profile is now public."
+                    )}
+                >
+                    {currentPrivacy.profilePublic ? <FaLock className="scale-160 ml-2 mr-4" /> : <FaGlobe className="scale-160 ml-2 mr-4" />}
+                    {currentPrivacy.profilePublic ? "Make profile private" : "Make profile public"}
+                </button>
+
+                {!hasUsername && !currentPrivacy.profilePublic && (
+                    <div className="w-0 min-w-full px-4 mt-1 text-xs text-stone-600">
+                        Set a username in &quot;Update username&quot; before making your profile public.
+                    </div>
+                )}
+
+                {/* Each saves immediately when toggled. Greyed out (but keeping their values) while the profile is private. */}
+                {([
+                    ["profilePhotoPublic", "Make profile photo public", "Profile photo is"],
+                    ["bioPublic", "Make bio public", "Bio is"],
+                    ["bodyWeightPublic", "Make body weight public", "Body weight is"],
+                    ["liftsPublic", "Make lifts public", "Lifts are"],
+                ] as const).map(([key, label, messagePrefix]) => {
+                    const disabled = formLoading6 || !currentPrivacy.profilePublic;
+                    return (
+                        <label
+                            key={key}
+                            className={`flex flex-row items-center gap-2 mx-4 mt-2 text-left sm:text-lg font-medium
+                                ${!currentPrivacy.profilePublic ? "opacity-50 hover:cursor-not-allowed" : formLoading6 ? "hover:cursor-wait" : "hover:cursor-pointer"}`}
+                        >
+                            <input
+                                type="checkbox"
+                                className={`accent-orange-500 scale-125 ${!currentPrivacy.profilePublic ? "hover:cursor-not-allowed" : formLoading6 ? "hover:cursor-wait" : "hover:cursor-pointer"}`}
+                                checked={currentPrivacy[key]}
+                                disabled={disabled}
+                                onChange={(e) => handlePrivacyChange(
+                                    { [key]: e.target.checked },
+                                    `${messagePrefix} now ${e.target.checked ? "public" : "private"}.`
+                                )}
+                            />
+                            {label}
+                        </label>
+                    );
+                })}
+
+                {updatePrivacyOutput.length > 0 && (
+                    <ul className={`w-full flex flex-col items-start text-sm list-disc mt-1 ${updatePrivacyOutputColor === "red" ? "text-red-600" : updatePrivacyOutputColor === "green" ? "text-green-600" : "text-black"}`}>
+                        {updatePrivacyOutput.map((error, i) => {
+                            return <li key={i} className="mx-7">{error}</li>
+                        })}
+                    </ul>
+                )}
+
+                {data?.user?.id && (
+                    <Link
+                        className="mx-4 text-blue-600 underline sm:no-underline hover:underline mt-1"
+                        href={`/profiles/${data.user.id}`}
+                    >
+                        View your profile
+                    </Link>
+                )}
+
+            </form>
+
             <form
                 className="flex flex-col mb-3 min-w-[80%]"
                 onSubmit={(e) => {
@@ -974,4 +1329,4 @@ const Page = () => {
     );
 }
 
-export default Page;
+export default Page;

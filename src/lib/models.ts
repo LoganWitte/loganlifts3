@@ -144,3 +144,52 @@ export type LiftResponse = {
     lift: Lift,
     bodyWeightUpdated: boolean,
 };
+
+// A user's privacy settings, as stored on the 'User' model & sent to / returned by '/api/account/privacy'.
+// A private profile (profilePublic = false) hides everything, including the username.
+// The other flags keep their values while the profile is private, and only apply once it is public.
+export type PrivacySettings = {
+    profilePublic: boolean,       // Boolean @default(false)
+    profilePhotoPublic: boolean,  // Boolean @default(true)
+    bioPublic: boolean,           // Boolean @default(true)
+    bodyWeightPublic: boolean,    // Boolean @default(false)
+    liftsPublic: boolean,         // Boolean @default(false)
+};
+export const PRIVACY_SETTING_KEYS = ["profilePublic", "profilePhotoPublic", "bioPublic", "bodyWeightPublic", "liftsPublic"] as const;
+
+// Request body for '/api/account/privacy'. Any subset of the flags; omitted flags keep their current values.
+export type UpdatePrivacyRequest = Partial<PrivacySettings>;
+
+// One user as returned by '/api/users/get'. Fields are null when private or unset.
+// Built only by 'toPublicProfileSummary' (lib/profileServer.ts), which applies every privacy rule.
+export type PublicProfileSummary = {
+    id: string,
+    name: string,
+    createdAt: string,          // "Account age": displayed as "Member since <date>"
+    image: string | null,
+    bio: string | null,
+    bodyWeight: number | null,  // pounds
+    liftCount: number | null,   // null when lifts are private; counts lifts on approved global exercises only
+};
+
+// A lift as shown on a public profile. Never includes 'userId' or 'exerciseId'.
+// Only lifts on approved global exercises are shown, so custom exercise names stay private.
+export type PublicLift = {
+    id: string,
+    reps: number,
+    time: string,
+    weight: number | null,      // null for bodyweight exercises when body weight is private
+    oneRepMax: number | null,   // null for bodyweight exercises when body weight is private
+    bodyWeight: number | null,  // null when body weight is private
+    addedWeight: number | null,
+    exercise: { name: string, URLSlug: string, category: Category, weightCoefficient: number | null },
+};
+
+// A single profile as returned by '/api/users/[id]'.
+// The owner may view their own profile while it is private. They see exactly what others would see once it is public.
+export type PublicProfile = Omit<PublicProfileSummary, "name"> & {
+    name: string | null,        // Only null when the owner views their own profile without a username
+    lifts: PublicLift[] | null, // Newest first. null when lifts are private
+    isOwnProfile: boolean,
+    profilePublic: boolean,     // Always true unless 'isOwnProfile'
+};
